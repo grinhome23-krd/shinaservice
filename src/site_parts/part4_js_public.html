@@ -68,21 +68,21 @@ function defaultDB(){
       {id:1,name:'Сергей',pin:'1111',color:'#60a5fa',active:true},
       {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
     ],
-    shiftStart:todayISO(),shiftFirst:1};
+    shiftStart:todayISO(),shiftFirst:1,staffSeen:{}};
   const t=todayISO();
-  const mk=(day,time,st,name,phone,car,plate,ids,com)=>({
+  const mk=(day,time,st,name,phone,car,plate,ids,com,src)=>({
     code:genCode(),name,phone,car,plate,
     services:ids.map(i=>{const s=services.find(x=>x.id===i);return{id:s.id,name:s.name,price:s.price};}),
-    date:addDaysISO(t,day),time,status:st,comment:com||'',
+    date:addDaysISO(t,day),time,status:st,comment:com||'',source:src||'online',
     total:ids.reduce((a,i)=>a+services.find(x=>x.id===i).price,0),
     createdAt:Date.now()
   });
   const bookings=[
-    mk(0,'11:00','confirmed','Иван Петров','+7 (916) 200-11-22','VW Tiguan','А123ВС77',[2],''),
-    mk(0,'14:00','new','Мария Соколова','+7 (903) 555-30-40','Mazda CX-5','В456МК77',[1,4],''),
-    mk(0,'16:00','done','Алексей Морозов','+7 (925) 100-20-30','Kia Rio','Е789КХ77',[3],''),
-    mk(1,'10:00','new','Дмитрий Волков','+7 (926) 777-45-67','Toyota RAV4','К012ОП77',[2,7],'Прошу позвонить перед визитом'),
-    mk(-3,'12:00','done','Ольга Кузнецова','+7 (915) 300-40-50','Hyundai Creta','М345РС77',[2,8],'')
+    mk(0,'11:00','confirmed','Иван Петров','+7 (916) 200-11-22','VW Tiguan','А123ВС77',[2],'','phone'),
+    mk(0,'14:00','new','Мария Соколова','+7 (903) 555-30-40','Mazda CX-5','В456МК77',[1,4],'','online'),
+    mk(0,'16:00','done','Алексей Морозов','+7 (925) 100-20-30','Kia Rio','Е789КХ77',[3],'','phone'),
+    mk(1,'10:00','new','Дмитрий Волков','+7 (926) 777-45-67','Toyota RAV4','К012ОП77',[2,7],'Прошу позвонить перед визитом','online'),
+    mk(-3,'12:00','done','Ольга Кузнецова','+7 (915) 300-40-50','Hyundai Creta','М345РС77',[2,8],'','phone')
   ];
   bookings.forEach(b=>{b.employeeId=shiftEmpFor(b.date,settings).id;b.empAuto=true;});
   return {settings,services,bookings};
@@ -115,7 +115,9 @@ function normalizeDB(d){
       b.employeeId=e?e.id:d.settings.employees[0].id;
     }
     if(b.empAuto===undefined)b.empAuto=true;
+    if(!b.source)b.source='online';
   });
+  if(!d.settings.staffSeen||typeof d.settings.staffSeen!=='object')d.settings.staffSeen={};
   return d;
 }
 let DB;
@@ -198,6 +200,54 @@ function slotAvailable(dateISO,time,needDur,excludeCode){
 }
 const ST={new:{t:'Новая',c:'st-new'},confirmed:{t:'Подтверждена',c:'st-conf'},done:{t:'Выполнена',c:'st-done'},cancelled:{t:'Отменена',c:'st-cancel'}};
 const stBadge=st=>{const m=ST[st]||ST.new;return '<span class="st '+m.c+'">'+m.t+'</span>';};
+/* --- источник записи и уведомления (общие для сайта, админки и сотрудника) --- */
+const SRC={online:{t:'онлайн',c:'st-src-on'},phone:{t:'телефон',c:'st-src-ph'}};
+const srcBadge=src=>{const m=SRC[src]||SRC.online;return '<span class="st '+m.c+'">'+m.t+'</span>';};
+const siteUrl=()=>location.href.split('#')[0];
+const normDigits=p=>{let d=String(p||'').replace(/\D/g,'');if(d&&d[0]==='8')d='7'+d.slice(1);if(d&&d[0]!=='7')d='7'+d;return d;};
+const waLink=(phone,msg)=>'https://wa.me/'+normDigits(phone)+'?text='+encodeURIComponent(msg);
+const tgLink=msg=>'https://t.me/share/url?url='+encodeURIComponent(siteUrl())+'&text='+encodeURIComponent(msg);
+function clientMsg(b){
+  const s=DB.settings;const e=b.employeeId&&empById(b.employeeId);
+  return [s.companyName+' — вы записаны ✅',
+    'Когда: '+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time,
+    'Что делаем: '+b.services.map(x=>x.name).join(' + '),
+    'Сумма: '+fmtMoney(b.total),
+    e?'Мастер: '+e.name:'',
+    'Адрес: '+s.address,
+    'Изменить/отменить: '+s.phone,
+    'Код записи: '+b.code].filter(Boolean).join('\n');
+}
+function copyText(txt,okMsg){
+  const done=()=>toast(okMsg||'Текст скопирован');
+  const fallback=()=>{
+    const ta=document.createElement('textarea');ta.value=txt;
+    ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done();}catch(e){toast('Не удалось скопировать','err');}
+    ta.remove();
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,fallback);
+  else fallback();
+}
+const escIcs=v=>String(v).replace(/\\/g,'\\\\').replace(/,/g,'\\,').replace(/;/g,'\\;');
+function downloadIcs(b){
+  const dur=Math.max(30,b.services.reduce((a,x)=>{const s=svcById(x.id);return a+(s?s.dur:30);},0));
+  const endM=Math.min(toMin(b.time)+dur,23*60+59);
+  const day=b.date.replace(/-/g,'');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ShinaService//RU','BEGIN:VEVENT',
+    'UID:'+b.code+'@shinaservice',
+    'DTSTART:'+day+'T'+b.time.replace(':','')+'00',
+    'DTEND:'+day+'T'+toHHMM(endM).replace(':','')+'00',
+    'SUMMARY:'+escIcs(DB.settings.companyName+' — шиномонтаж'),
+    'DESCRIPTION:'+escIcs(b.services.map(x=>x.name).join(', ')+' · '+fmtMoney(b.total)+' · код '+b.code),
+    'LOCATION:'+escIcs(DB.settings.address),
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=b.code+'.ics';
+  document.body.appendChild(a);a.click();a.remove();
+  toast('Напоминание сохранено в календарь');
+}
 function hoursText(){
   const s=DB.settings;const d=Array.from(new Set(s.workDays)).sort((a,b)=>a-b);
   if(d.length===7)return 'Ежедневно '+s.workStart+'–'+s.workEnd;
@@ -407,7 +457,7 @@ function submitBooking(){
   const b={code:genCode(),name,phone:bk.phone,car:(bk.car||'').trim(),plate:(bk.plate||'').trim().toUpperCase(),
     services:l.map(s=>({id:s.id,name:s.name,price:s.price})),
     date:bk.date,time:bk.time,comment:(bk.comment||'').trim(),
-    total:l.reduce((a,s)=>a+s.price,0),status:'new',createdAt:Date.now(),
+    total:l.reduce((a,s)=>a+s.price,0),status:'new',createdAt:Date.now(),source:'online',
     employeeId:emp?emp.id:null,empAuto:true};
   DB.bookings.push(b);save();
   showSuccess(b);
@@ -426,7 +476,13 @@ function showSuccess(b){
         (empById(b.employeeId)?'<div class="row"><span>Ваш мастер</span><b>'+esc(empById(b.employeeId).name)+'</b></div>':'')+
         '<div class="row"><span>Сумма</span><b>'+fmtMoney(b.total)+'</b></div>'+
       '</div>'+
-      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">'+
+      '<p class="hint" style="margin-top:14px">Уведомления: сохраните визит в календарь телефона или отправьте подтверждение себе в мессенджер.</p>'+
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px">'+
+        '<button class="btn btn-o btn-s" id="okIcs">📅 В календарь</button>'+
+        '<button class="btn btn-o btn-s" id="okWa">💬 WhatsApp</button>'+
+        '<button class="btn btn-o btn-s" id="okTg">✈️ Telegram</button>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">'+
         '<button class="btn btn-o" id="okAgain">Записать ещё</button>'+
         '<button class="btn btn-p" id="okMy">Мои записи</button>'+
       '</div>'+
@@ -434,6 +490,9 @@ function showSuccess(b){
   $('#bkNav').style.display='none';
   $('#okAgain').addEventListener('click',()=>{resetBk();document.getElementById('booking').scrollIntoView();});
   $('#okMy').addEventListener('click',()=>{$('#myPhone').value=b.phone;findMy();document.getElementById('my').scrollIntoView();});
+  $('#okIcs').addEventListener('click',()=>downloadIcs(b));
+  $('#okWa').addEventListener('click',()=>window.open(waLink('',clientMsg(b)),'_blank','noopener'));
+  $('#okTg').addEventListener('click',()=>window.open(tgLink(clientMsg(b)),'_blank','noopener'));
 }
 function resetBk(){
   bk.step=1;bk.services=new Set();bk.date='';bk.time='';bk.agree=false;
