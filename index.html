@@ -158,6 +158,22 @@ select.inp-sm{width:auto;padding:7px 10px;font-size:13px;border-radius:9px}
 .my-item .l b{display:block}
 .my-item .l span{color:var(--mut);font-size:13px}
 .my-item.cancelled{opacity:.55}
+/* личный кабинет клиента */
+.my-item.clickable{cursor:pointer;transition:.12s}
+.my-item.clickable:hover{border-color:var(--line2);background:rgba(255,255,255,.03)}
+.cab-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:4px 0 16px}
+.cab-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.cab-svc-row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+.cab-svc-row:first-of-type{border-top:none}
+.cab-svc-row b{flex:1;min-width:0}
+.cab-dtl-row{display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;align-items:flex-start}
+.cab-dtl-row:first-child{border-top:none}
+.cab-dtl-row>span:first-child{min-width:110px;color:var(--dim);flex:none}
+@media(max-width:640px){
+  .cab-stats{grid-template-columns:1fr 1fr;gap:8px}
+  .cab-dtl-row{flex-direction:column;gap:2px}
+  .cab-dtl-row>span:first-child{min-width:0}
+}
 /* badges */
 .st{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
 .st-new{background:rgba(245,158,11,.14);color:var(--acc2)}
@@ -400,7 +416,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
     <nav class="nav">
       <a href="#services">Услуги</a>
       <a href="#booking">Запись</a>
-      <a href="#my">Мои записи</a>
+      <a href="#my">Личный кабинет</a>
       <a href="#faq">Вопросы</a>
     </nav>
     <button class="btn btn-o btn-s" id="adminBtn">Админка</button>
@@ -409,7 +425,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
   <nav class="mnav" id="mnav">
     <a href="#services">Услуги</a>
     <a href="#booking">Запись</a>
-    <a href="#my">Мои записи</a>
+    <a href="#my">Личный кабинет</a>
     <a href="#faq">Вопросы</a>
     <a href="#contacts">Контакты</a>
     <a href="#" id="mStaffLink">🔧 Панель сотрудника</a>
@@ -492,14 +508,14 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
 <section class="sec alt" id="my">
   <div class="container">
     <div class="sec-head">
-      <h2 class="sec-t">Мои <em>записи</em></h2>
-      <p class="sec-d">Введите телефон, который указывали при записи, — покажем все ваши визиты. Будущие записи можно отменить.</p>
+      <h2 class="sec-t">Личный <em>кабинет</em></h2>
+      <p class="sec-d">Введите телефон, который указывали при записи: все визиты за всё время, подробности каждой записи, изменение неподтверждённых записей и статистика затрат и услуг.</p>
     </div>
     <div class="drow" style="max-width:560px">
       <div style="flex:1;min-width:200px"><label class="lb req">Телефон записи</label><input class="inp" id="myPhone" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>
-      <button class="btn btn-p" id="myFind">Найти</button>
+      <button class="btn btn-p" id="myFind">Войти в кабинет</button>
     </div>
-    <div id="myList" style="max-width:640px"></div>
+    <div id="myList" style="max-width:720px"></div>
   </div>
 </section>
 
@@ -510,7 +526,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
     </div>
     <div class="faq" style="max-width:760px">
       <details><summary>Нужно ли записываться заранее?</summary><div class="faq-b">Да, мы работаем по записи — так вы не ждёте в очереди. Запись на ближайший день возможна в день обращения, если есть свободные слоты. В высокий сезон (октябрь–ноябрь и март–апрель) рекомендуем записываться за 2–3 дня.</div></details>
-      <details><summary>Можно ли отменить или перенести запись?</summary><div class="faq-b">Да. Отменить запись можно самостоятельно в разделе «Мои записи» по номеру телефона. Для переноса позвоните нам по телефону <b class="js-phone"></b> — администратор подберёт новое время.</div></details>
+      <details><summary>Можно ли изменить или отменить запись?</summary><div class="faq-b">Да, в личном кабинете (раздел «Мои записи»). Пока запись не подтверждена администратором, вы можете сами изменить дату, время, услуги и данные авто, а также отменить её. Подтверждённую запись можно отменить; для срочного переноса позвоните нам по телефону <b class="js-phone"></b> — администратор подберёт новое время.</div></details>
       <details><summary>Сколько времени занимает смена шин?</summary><div class="faq-b">Комплект без балансировки — около 1 часа, с балансировкой — до 1,5 часов. Смена колёс «на дисках» — около 40 минут. Время рассчитано для легкового автомобиля; внедорожники и R19+ могут занять чуть больше.</div></details>
       <details><summary>Что делать, если я опаздываю?</summary><div class="faq-b">Мы держим слот за вами 15 минут. Если задерживаетесь сильнее — позвоните нам: постараемся сдвинуть запись или предложим ближайшее свободное время.</div></details>
       <details><summary>Работаете ли вы с низким профилем и R18+?</summary><div class="faq-b">Да. У нас есть оборудование для низкого профиля и RunFlat, бесшпилечные сборочные головки и стенды балансировки. Уточните тип шин в комментарии к записи — мы подготовим нужный инструмент заранее.</div></details>
@@ -1124,7 +1140,7 @@ function isClosed(dateISO){
   if(!s.workDays.includes(dow))return true;
   return (s.blockedDates||[]).includes(dateISO);
 }
-function daySlots(dateISO,needDur){
+function daySlots(dateISO,needDur,excludeCode){
   const s=DB.settings;
   if(isClosed(dateISO))return [];
   const out=[];const end=toMin(s.workEnd);
@@ -1132,9 +1148,11 @@ function daySlots(dateISO,needDur){
   const cutoff=isToday?now.getHours()*60+now.getMinutes()+15:-1;
   const dur=Math.max(30,needDur||60);
   for(let m=toMin(s.workStart);m<end;m+=s.interval){
-    const free=s.posts-activeAt(dateISO,toHHMM(m));
+    const t=toHHMM(m);
+    const used=liveBookings().filter(x=>x.date===dateISO&&x.time===t&&x.code!==excludeCode).length;
+    const free=s.posts-used;
     const blocked=(m<=cutoff)||(free<=0)||(m+dur>end);
-    out.push({t:toHHMM(m),free,blocked});
+    out.push({t,free,blocked});
   }
   return out;
 }
@@ -1426,7 +1444,7 @@ function showSuccess(b){
       '<div class="okico">✓</div>'+
       '<h3 style="margin-bottom:2px">Вы записаны!</h3>'+
       '<div class="okcode">'+b.code+'</div>'+
-      '<p style="color:var(--mut);max-width:440px;margin:10px auto 18px">Администратор перезвонит на '+esc(b.phone)+' для подтверждения. Сохраните код записи — он пригодится в разделе «Мои записи».</p>'+
+      '<p style="color:var(--mut);max-width:440px;margin:10px auto 18px">Администратор перезвонит на '+esc(b.phone)+' для подтверждения. Сохраните код записи — он пригодится в личном кабинете.</p>'+
       '<div class="sumbox" style="text-align:left;margin-bottom:0">'+
         '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(b.date)+', '+b.time+'</b></div>'+
         '<div class="row"><span>Услуги</span><b>'+esc(b.services.map(s=>s.name).join(' + '))+'</b></div>'+
@@ -1441,7 +1459,7 @@ function showSuccess(b){
       '</div>'+
       '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">'+
         '<button class="btn btn-o" id="okAgain">Записать ещё</button>'+
-        '<button class="btn btn-p" id="okMy">Мои записи</button>'+
+        '<button class="btn btn-p" id="okMy">Личный кабинет</button>'+
       '</div>'+
     '</div>';
   $('#bkNav').style.display='none';
@@ -1464,35 +1482,193 @@ function chooseService(id){
   toast('Услуга добавлена в запись');
 }
 
-/* --- мои записи --- */
+/* --- личный кабинет клиента --- */
+const CAB={phone:''};
+function cabNotice(b,text){
+  b.notices=b.notices||[];
+  b.notices.push({when:Date.now(),channel:'кабинет',kind:'client',text:text,delivered:true});
+}
 function findMy(){
   const wrap=$('#myList');
-  const dig=($('#myPhone').value||'').replace(/\D/g,'');
-  if(dig.length!==11||dig[0]!=='7'){wrap.innerHTML='<div class="msg warn" style="max-width:640px">Введите телефон в формате +7 XXX XXX-XX-XX — как при записи.</div>';return;}
-  const items=DB.bookings.filter(b=>b.phone.replace(/\D/g,'')===dig).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
-  if(!items.length){wrap.innerHTML='<div class="msg">По этому телефону записей не найдено. Проверьте номер или создайте новую запись выше.</div>';return;}
+  const dig=normDigits($('#myPhone').value||'');
+  if(dig.length!==11){wrap.innerHTML='<div class="msg warn" style="max-width:720px">Введите телефон в формате +7 XXX XXX-XX-XX — как при записи.</div>';return;}
+  CAB.phone=dig;
+  renderCabinet();
+}
+function cabItems(){
+  return DB.bookings.filter(b=>normDigits(b.phone)===CAB.phone)
+    .sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+}
+function isFutureBooking(b){
   const nowM=new Date().getHours()*60+new Date().getMinutes();
-  wrap.innerHTML=items.map(b=>{
-    const future=b.date>todayISO()||(b.date===todayISO()&&toMin(b.time)>nowM);
-    const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
-    return '<div class="my-item '+(b.status==='cancelled'?'cancelled':'')+'">'+
-      '<div class="l"><b>'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time+' · '+b.code+'</b>'+
-      '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span>'+
-      (Array.isArray(b.notices)&&b.notices.length?'<span style="color:var(--acc2)">📨 Подтверждение отправлено вам по '+clientChannel()+'</span>':'')+'</div>'+
-      '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+
-      (canCancel?'<button class="btn btn-d btn-s" data-cancel="'+b.code+'">Отменить</button>':'')+
-      '</div></div>';
-  }).join('');
+  return b.date>todayISO()||(b.date===todayISO()&&toMin(b.time)>nowM);
+}
+function renderCabinet(){
+  const wrap=$('#myList');
+  const items=cabItems();
+  if(!items.length){
+    CAB.phone='';
+    wrap.innerHTML='<div class="msg" style="max-width:720px">По этому телефону записей не найдено. Проверьте номер или создайте новую запись выше.</div>';
+    return;
+  }
+  const t=todayISO();
+  const done=items.filter(b=>b.status==='done');
+  const spend=done.reduce((a,b)=>a+(b.total||0),0);
+  const exp=items.filter(b=>b.status==='confirmed'&&b.date>=t).reduce((a,b)=>a+(b.total||0),0);
+  const avg=done.length?Math.round(spend/done.length):0;
+  const upcoming=items.filter(b=>(b.status==='new'||b.status==='confirmed')&&isFutureBooking(b)).length;
+  const svc={};
+  items.filter(b=>b.status!=='cancelled').forEach(b=>(b.services||[]).forEach(s=>{
+    const m=svc[s.id]||(svc[s.id]={name:s.name,cnt:0,sum:0});
+    m.cnt++;m.sum+=s.price||0;
+  }));
+  const svcRows=Object.values(svc).sort((a,b)=>b.sum-a.sum).map(m=>
+    '<div class="cab-svc-row"><b>'+esc(m.name)+'</b><span class="sub">× '+m.cnt+'</span>'+
+    '<b style="flex:none;min-width:84px;text-align:right">'+fmtMoney(m.sum)+'</b></div>').join('');
+  wrap.innerHTML=
+    '<div class="st-stats cab-stats">'+
+      '<div class="st-stat"><span>Визитов выполнено</span><b>'+done.length+'</b><i>за всё время</i></div>'+
+      '<div class="st-stat"><span>Потрачено всего</span><b style="color:var(--ok)">'+fmtMoney(spend)+'</b><i>по выполненным</i></div>'+
+      '<div class="st-stat"><span>Ожидается к оплате</span><b>'+fmtMoney(exp)+'</b><i>утверждённые визиты</i></div>'+
+      '<div class="st-stat"><span>Средний чек</span><b>'+fmtMoney(avg)+'</b><i>за визит · впереди записей: '+upcoming+'</i></div>'+
+    '</div>'+
+    (Object.keys(svc).length?'<div class="cab-box"><h3 style="margin-bottom:2px">Мои услуги</h3><p class="mut-sm" style="margin-bottom:6px">Сколько раз заказывали и на какую сумму — без отменённых.</p>'+svcRows+'</div>':'')+
+    '<h3 style="margin:14px 0 10px">История записей <span class="sub">— нажмите на запись, чтобы открыть подробности</span></h3>'+
+    items.map(b=>{
+      const future=isFutureBooking(b);
+      const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
+      const editable=b.status==='new'&&future;
+      return '<div class="my-item clickable'+(b.status==='cancelled'?' cancelled':'')+'" data-myopen="'+b.code+'" title="Открыть подробности">'+
+        '<div class="l"><b>'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time+' · '+b.code+'</b>'+
+        '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span>'+
+        (editable?'<span style="color:var(--acc2)">✎ Можно изменить, пока администратор не подтвердил</span>':'')+
+        (Array.isArray(b.notices)&&b.notices.length?'<span style="color:var(--acc2)">📨 Подтверждение отправлено по '+clientChannel()+'</span>':'')+'</div>'+
+        '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+
+        (canCancel?'<button class="btn btn-d btn-s" data-cancel="'+b.code+'">Отменить</button>':'')+
+        '</div></div>';
+    }).join('')+
+    '<button class="btn btn-o btn-s" data-cabout style="margin-top:6px">Выйти из кабинета</button>';
+}
+function openMyDetails(code){
+  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  const future=isFutureBooking(b);
+  const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
+  const canEdit=b.status==='new'&&future;
+  const emp=empById(b.employeeId);
+  const notices=(b.notices||[]).slice().sort((a,b2)=>(b2.when||0)-(a.when||0)).map(n=>
+    '<div style="margin-bottom:4px">📨 '+esc(n.text||'')+(n.when?' <span class="sub">· '+fmtDT(n.when)+'</span>':'')+'</div>').join('')||'—';
+  openModal(
+    '<div class="m-head"><h3>Запись '+b.code+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body"><div class="cab-dtl">'+
+      '<div class="cab-dtl-row"><span>Статус</span><div style="flex:1;min-width:0">'+stBadge(b.status)+(b.source==='phone'?' <span class="st st-src-ph">создана администратором</span>':' <span class="st st-src-on">онлайн</span>')+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Дата и время</span><div style="flex:1;min-width:0"><b>'+fmtDateHuman(b.date)+', '+b.time+'</b>'+(future?'':' <span class="sub">— визит в прошлом</span>')+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Мастер</span><div style="flex:1;min-width:0">'+(emp?esc(emp.name):'—')+' <span class="sub">· закрепляется по графику смен</span></div></div>'+
+      '<div class="cab-dtl-row"><span>Авто</span><div style="flex:1;min-width:0">'+esc(b.car||'—')+(b.plate?' · '+esc(b.plate):'')+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Услуги</span><div style="flex:1;min-width:0">'+b.services.map(s=>'<div>'+esc(s.name)+' — <b>'+fmtMoney(s.price)+'</b></div>').join('')+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Итого</span><div style="flex:1;min-width:0"><b style="color:var(--acc2);font-size:16px">'+fmtMoney(b.total)+'</b></div></div>'+
+      (b.comment?'<div class="cab-dtl-row"><span>Комментарий</span><div style="flex:1;min-width:0">'+esc(b.comment)+'</div></div>':'')+
+      '<div class="cab-dtl-row"><span>Создана</span><div style="flex:1;min-width:0">'+fmtDT(b.createdAt)+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Уведомления</span><div style="flex:1;min-width:0;font-size:13px">'+notices+'</div></div>'+
+    '</div>'+
+    (canEdit?'<p class="mut-sm" style="margin-top:10px">Запись ещё не подтверждена администратором — вы можете изменить дату, время, услуги и данные авто.</p>':'')+
+    '</div>'+
+    '<div class="m-foot">'+
+      (canEdit?'<button class="btn btn-o" id="myEdit">✎ Изменить</button>':'')+
+      (canCancel?'<button class="btn btn-d" id="myCancel">✗ Отменить запись</button>':'')+
+      '<button class="btn btn-p" data-mx>Закрыть</button></div>');
+  const ed=$('#myEdit');
+  if(ed)ed.onclick=()=>openMyEdit(b);
+  const cn=$('#myCancel');
+  if(cn)cn.onclick=()=>openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
+    b.status='cancelled';
+    cabNotice(b,'Запись отменена клиентом через личный кабинет');
+    save();closeModal();renderCabinet();
+    toast('Запись '+b.code+' отменена');
+  });
+}
+function openMyEdit(b){
+  const act=activeServices();
+  const extra=b.services.filter(s=>!act.some(x=>x.id===s.id)).map(s=>Object.assign({},s,{hidden:true}));
+  const all=act.concat(extra);
+  const has=id=>b.services.some(x=>x.id===id);
+  openModal(
+    '<div class="m-head"><h3>Изменить запись '+b.code+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<div class="f-grid">'+
+        '<div><label class="lb req">Дата</label><input type="date" id="ceDate" class="inp" min="'+todayISO()+'" value="'+(b.date>=todayISO()?b.date:todayISO())+'"></div>'+
+        '<div><label class="lb req">Время</label><select id="ceTime" class="inp"><option value="">— выберите дату —</option></select></div>'+
+        '<div><label class="lb req">Имя</label><input id="ceName" class="inp" value="'+esc(b.name)+'"></div>'+
+        '<div><label class="lb">Авто</label><input id="ceCar" class="inp" value="'+esc(b.car||'')+'"></div>'+
+        '<div><label class="lb">Госномер</label><input id="cePlate" class="inp" value="'+esc(b.plate||'')+'"></div>'+
+        '<div class="full"><label class="lb">Комментарий</label><input id="ceCom" class="inp" value="'+esc(b.comment||'')+'" placeholder="Например: шины лежат в багажнике"></div>'+
+      '</div>'+
+      '<label class="lb" style="margin-top:10px">Услуги</label>'+
+      all.map(s=>'<label class="svc-row'+(has(s.id)?' on':'')+'"><input type="checkbox" data-cesvc="'+s.id+'"'+(has(s.id)?' checked':'')+'><span class="cb">✓</span>'+
+        '<span class="n"><b>'+esc(s.name)+'</b><span>≈ '+s.dur+' мин'+(s.hidden?' · услуга скрыта для новых записей':'')+'</span></span>'+
+        '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span></label>').join('')+
+      '<div class="tot"><span class="t2">Итого</span><span id="ceTotal">'+fmtMoney(b.total)+'</span></div>'+
+      '<p class="mut-sm" style="margin-top:8px">Мастер закрепляется по графику смен автоматически. После сохранения администратор увидит изменения в своей панели.</p>'+
+      '<div class="msg warn" id="ceMsg" style="display:none;margin-top:10px"></div>'+
+    '</div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="ceSave">Сохранить</button></div>');
+  const picks=()=>Array.from($('#modalBox').querySelectorAll('[data-cesvc]:checked')).map(i=>svcById(i.dataset.cesvc)).filter(Boolean);
+  const ceDur=()=>Math.max(30,picks().reduce((a,s)=>a+s.dur,0));
+  const updTot=()=>{$('#ceTotal').textContent=fmtMoney(picks().reduce((a,s)=>a+s.price,0));};
+  const loadSlots=()=>{
+    const sel=$('#ceTime');const d=$('#ceDate').value;
+    if(!d){sel.innerHTML='<option value="">— выберите дату —</option>';return;}
+    const slots=daySlots(d,ceDur(),b.code).filter(s=>!s.blocked);
+    sel.innerHTML=slots.length?slots.map(s=>'<option value="'+s.t+'">'+s.t+'</option>').join(''):'<option value="">нет свободных слотов</option>';
+  };
+  $('#modalBox').querySelectorAll('[data-cesvc]').forEach(ch=>ch.addEventListener('change',()=>{
+    ch.closest('.svc-row').classList.toggle('on',ch.checked);
+    updTot();loadSlots();
+  }));
+  $('#ceDate').addEventListener('change',loadSlots);
+  $('#ceSave').onclick=()=>{
+    const name=$('#ceName').value.trim();
+    const date=$('#ceDate').value;const time=$('#ceTime').value;
+    const list=picks();
+    const msg=$('#ceMsg');msg.style.display='none';
+    const err=t=>{msg.textContent=t;msg.style.display='block';};
+    if(name.length<2)return err('Укажите имя');
+    if(!date)return err('Выберите дату');
+    if(!time)return err('Выберите время');
+    if(!list.length)return err('Выберите хотя бы одну услугу');
+    if(!slotAvailable(date,time,ceDur(),b.code))return err('Это время уже занято — выберите другое');
+    const changes=[];
+    if(b.date!==date||b.time!==time)changes.push('время: '+fmtDateShort(b.date)+' '+b.time+' → '+fmtDateShort(date)+' '+time);
+    if(b.services.map(s=>s.name).join(',')!==list.map(s=>s.name).join(','))changes.push('услуги: '+list.map(s=>s.name).join(' + '));
+    b.date=date;b.time=time;b.name=name;
+    b.car=$('#ceCar').value.trim();b.plate=$('#cePlate').value.trim().toUpperCase();b.comment=$('#ceCom').value.trim();
+    b.services=list.map(s=>({id:s.id,name:s.name,price:s.price}));
+    b.total=list.reduce((a,s)=>a+s.price,0);
+    if(b.empAuto){const e=empOn(date);if(e)b.employeeId=e.id;}
+    if(changes.length)cabNotice(b,'Изменено клиентом через личный кабинет ('+changes.join('; ')+')');
+    save();closeModal();renderCabinet();
+    toast('Запись '+b.code+' обновлена — администратор увидит изменения');
+  };
 }
 $('#myPhone').addEventListener('input',e=>phoneMask(e.target));
 $('#myPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findMy();}});
 $('#myFind').addEventListener('click',findMy);
 $('#myList').addEventListener('click',e=>{
-  const btn=e.target.closest('[data-cancel]');if(!btn)return;
-  const b=DB.bookings.find(x=>x.code===btn.dataset.cancel);if(!b)return;
-  openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
-    b.status='cancelled';save();findMy();toast('Запись отменена');
-  });
+  const btn=e.target.closest('[data-cancel]');
+  if(btn){
+    const b=DB.bookings.find(x=>x.code===btn.dataset.cancel);if(!b)return;
+    openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
+      b.status='cancelled';
+      cabNotice(b,'Запись отменена клиентом через личный кабинет');
+      save();renderCabinet();toast('Запись '+b.code+' отменена');
+    });
+    return;
+  }
+  if(e.target.closest('[data-cabout]')){
+    CAB.phone='';$('#myPhone').value='';$('#myList').innerHTML='';
+    return;
+  }
+  const card=e.target.closest('[data-myopen]');
+  if(card)openMyDetails(card.dataset.myopen);
 });
 /* делегирование: выбрать услугу из сетки */
 $('#svcGrid').addEventListener('click',e=>{

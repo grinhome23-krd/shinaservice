@@ -158,6 +158,22 @@ select.inp-sm{width:auto;padding:7px 10px;font-size:13px;border-radius:9px}
 .my-item .l b{display:block}
 .my-item .l span{color:var(--mut);font-size:13px}
 .my-item.cancelled{opacity:.55}
+/* личный кабинет клиента */
+.my-item.clickable{cursor:pointer;transition:.12s}
+.my-item.clickable:hover{border-color:var(--line2);background:rgba(255,255,255,.03)}
+.cab-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:4px 0 16px}
+.cab-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.cab-svc-row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+.cab-svc-row:first-of-type{border-top:none}
+.cab-svc-row b{flex:1;min-width:0}
+.cab-dtl-row{display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;align-items:flex-start}
+.cab-dtl-row:first-child{border-top:none}
+.cab-dtl-row>span:first-child{min-width:110px;color:var(--dim);flex:none}
+@media(max-width:640px){
+  .cab-stats{grid-template-columns:1fr 1fr;gap:8px}
+  .cab-dtl-row{flex-direction:column;gap:2px}
+  .cab-dtl-row>span:first-child{min-width:0}
+}
 /* badges */
 .st{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
 .st-new{background:rgba(245,158,11,.14);color:var(--acc2)}
