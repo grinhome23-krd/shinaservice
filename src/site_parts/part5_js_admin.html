@@ -457,7 +457,29 @@ function renderSettings(){
   $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
   renderEmployees();
   renderShiftCfg();
+  renderStatsCfg();
 }
+/* --- статистика на главной (редактируемые цифры hero) --- */
+function renderStatsCfg(){
+  const st=DB.settings.stats||[];
+  $('#statsBox').innerHTML=[0,1,2,3].map(i=>{
+    const it=st[i]||{};
+    return '<div><label class="lb">Цифра '+(i+1)+'</label><input class="inp" data-stv="'+i+'" maxlength="24" value="'+esc(it.v||'')+'"></div>'+
+      '<div><label class="lb">Подпись</label><input class="inp" data-stt="'+i+'" maxlength="40" value="'+esc(it.t||'')+'"></div>';
+  }).join('');
+}
+$('#statsSave').addEventListener('click',()=>{
+  const stats=[];
+  for(let i=0;i<4;i++){
+    const v=$('#statsBox [data-stv="'+i+'"]').value.trim();
+    const t=$('#statsBox [data-stt="'+i+'"]').value.trim();
+    if(t&&!v){toast('Пункт '+(i+1)+': заполните цифру','err');return;}
+    if(v)stats.push({v,t});
+  }
+  DB.settings.stats=stats;
+  save();applySettings();
+  toast('Статистика обновлена');
+});
 /* --- сотрудники и смены --- */
 function renderEmployees(){
   $('#empList').innerHTML=DB.settings.employees.map(e=>

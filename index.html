@@ -18,6 +18,7 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{overflow-x:clip}
 [hidden]{display:none!important}
 h1,h2,h3,h4{line-height:1.25;margin:0 0 .5em}
 p{margin:0 0 1em}
@@ -298,7 +299,13 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
   .ring{display:none}
   .ft-grid{grid-template-columns:1fr;gap:20px;padding:32px 0 24px}
   .a-grid{grid-template-columns:1fr}
-  .hero-stats{gap:18px}
+  /* hero: центрируем блоки и убираем переполнение на узких экранах */
+  .hero-in{text-align:center}
+  .hero-sub{margin-left:auto;margin-right:auto}
+  .hero-cta{justify-content:center}
+  .hero-chips{justify-content:center}
+  .hero-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px;max-width:400px;margin:30px auto 0}
+  .hstat{text-align:center}
   .bk-nav{padding:12px 14px}
   .bk-nav .btn{flex:1}
   .st-stats{gap:8px}
@@ -371,7 +378,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
       <div class="hchip">📍 <b class="js-addr">г. Москва, ул. Моторная, 12с3</b></div>
       <div class="hchip">📞 <b><a class="js-phone" href="#">+7 (495) 120-45-67</a></b></div>
     </div>
-    <div class="hero-stats">
+    <div class="hero-stats" id="heroStats">
       <div class="hstat"><b>12</b><span>лет работы</span></div>
       <div class="hstat"><b>40 000+</b><span>обслуженных авто</span></div>
       <div class="hstat"><b>4</b><span>поста шиномонтажа</span></div>
@@ -400,7 +407,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
       <div class="step-card"><div class="step-n">1</div><h3>Заявка онлайн</h3><p>Выберите услуги, дату и свободное время прямо на сайте — это займёт около минуты.</p></div>
       <div class="step-card"><div class="step-n">2</div><h3>Подтверждение</h3><p>Администратор перезвонит по указанному телефону и подтвердит запись.</p></div>
       <div class="step-card"><div class="step-n">3</div><h3>Работы</h3><p>Приезжайте к назначенному времени. Мастера сразу принимают авто на пост.</p></div>
-      <div class="step-card"><div class="step-n">4</div><h3>Готово</h3><p>Оплата после приёмки работ: наличными или картой. Гарантия на все виды работ.</p></div>
+      <div class="step-card"><div class="step-n">4</div><h3>Готово</h3><p>Оплата после приёмки работ — наличными. О других способах оплаты уточняйте по телефону. Гарантия на все виды работ.</p></div>
     </div>
   </div>
 </section>
@@ -700,6 +707,12 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
             <button class="btn btn-p" id="stSave" style="margin-top:16px">Сохранить</button>
           </div>
           <div class="panel" style="margin-top:14px">
+            <h3>Статистика на главной</h3>
+            <p class="mut-sm">Четыре цифры в шапке сайта, под кнопками «Записаться». Значение обязательно, подпись — нет; пустое значение скрывает пункт.</p>
+            <div class="f-grid" id="statsBox"></div>
+            <button class="btn btn-p btn-s" id="statsSave" style="margin-top:14px">Сохранить статистику</button>
+          </div>
+          <div class="panel" style="margin-top:14px">
             <h3>Сотрудники и смены</h3>
             <div id="empList"></div>
             <button class="btn btn-o btn-s" id="btnAddEmp" style="margin-top:12px">+ Добавить сотрудника</button>
@@ -817,7 +830,8 @@ function defaultDB(){
       {id:1,name:'Сергей',pin:'1111',color:'#60a5fa',active:true},
       {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
     ],
-    shiftStart:todayISO(),shiftFirst:1,staffSeen:{}};
+    shiftStart:todayISO(),shiftFirst:1,staffSeen:{},
+    stats:[{v:'12',t:'лет работы'},{v:'40 000+',t:'обслуженных авто'},{v:'4',t:'поста шиномонтажа'},{v:'4.9 ★',t:'рейтинг клиентов'}]};
   const t=todayISO();
   const mk=(day,time,st,name,phone,car,plate,ids,com,src)=>({
     code:genCode(),name,phone,car,plate,
@@ -867,6 +881,8 @@ function normalizeDB(d){
     if(!b.source)b.source='online';
   });
   if(!d.settings.staffSeen||typeof d.settings.staffSeen!=='object')d.settings.staffSeen={};
+  if(!Array.isArray(d.settings.stats))d.settings.stats=defaultDB().settings.stats;
+  else d.settings.stats=d.settings.stats.map(x=>({v:String((x&&x.v)||'').slice(0,40),t:String((x&&x.t)||'').slice(0,60)})).filter(x=>x.v);
   return d;
 }
 let DB;
@@ -1055,6 +1071,12 @@ function applySettings(){
   $$('.js-addr').forEach(e=>e.textContent=s.address);
   $$('.js-hours').forEach(e=>e.textContent=hoursText());
   $$('.js-phone').forEach(e=>{e.textContent=s.phone;e.href='tel:'+s.phone.replace(/[^+\d]/g,'');});
+  const hs=$('#heroStats');
+  if(hs){
+    const st=(s.stats||[]).filter(x=>x&&x.v);
+    hs.style.display=st.length?'':'none';
+    hs.innerHTML=st.map(x=>'<div class="hstat"><b>'+esc(x.v)+'</b>'+(x.t?'<span>'+esc(x.t)+'</span>':'')+'</div>').join('');
+  }
   document.title=s.companyName+' — онлайн-запись на шиномонтаж';
 }
 function renderServicesGrid(){
@@ -1750,7 +1772,29 @@ function renderSettings(){
   $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
   renderEmployees();
   renderShiftCfg();
+  renderStatsCfg();
 }
+/* --- статистика на главной (редактируемые цифры hero) --- */
+function renderStatsCfg(){
+  const st=DB.settings.stats||[];
+  $('#statsBox').innerHTML=[0,1,2,3].map(i=>{
+    const it=st[i]||{};
+    return '<div><label class="lb">Цифра '+(i+1)+'</label><input class="inp" data-stv="'+i+'" maxlength="24" value="'+esc(it.v||'')+'"></div>'+
+      '<div><label class="lb">Подпись</label><input class="inp" data-stt="'+i+'" maxlength="40" value="'+esc(it.t||'')+'"></div>';
+  }).join('');
+}
+$('#statsSave').addEventListener('click',()=>{
+  const stats=[];
+  for(let i=0;i<4;i++){
+    const v=$('#statsBox [data-stv="'+i+'"]').value.trim();
+    const t=$('#statsBox [data-stt="'+i+'"]').value.trim();
+    if(t&&!v){toast('Пункт '+(i+1)+': заполните цифру','err');return;}
+    if(v)stats.push({v,t});
+  }
+  DB.settings.stats=stats;
+  save();applySettings();
+  toast('Статистика обновлена');
+});
 /* --- сотрудники и смены --- */
 function renderEmployees(){
   $('#empList').innerHTML=DB.settings.employees.map(e=>

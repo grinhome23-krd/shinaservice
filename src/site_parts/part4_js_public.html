@@ -68,7 +68,8 @@ function defaultDB(){
       {id:1,name:'Сергей',pin:'1111',color:'#60a5fa',active:true},
       {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
     ],
-    shiftStart:todayISO(),shiftFirst:1,staffSeen:{}};
+    shiftStart:todayISO(),shiftFirst:1,staffSeen:{},
+    stats:[{v:'12',t:'лет работы'},{v:'40 000+',t:'обслуженных авто'},{v:'4',t:'поста шиномонтажа'},{v:'4.9 ★',t:'рейтинг клиентов'}]};
   const t=todayISO();
   const mk=(day,time,st,name,phone,car,plate,ids,com,src)=>({
     code:genCode(),name,phone,car,plate,
@@ -118,6 +119,8 @@ function normalizeDB(d){
     if(!b.source)b.source='online';
   });
   if(!d.settings.staffSeen||typeof d.settings.staffSeen!=='object')d.settings.staffSeen={};
+  if(!Array.isArray(d.settings.stats))d.settings.stats=defaultDB().settings.stats;
+  else d.settings.stats=d.settings.stats.map(x=>({v:String((x&&x.v)||'').slice(0,40),t:String((x&&x.t)||'').slice(0,60)})).filter(x=>x.v);
   return d;
 }
 let DB;
@@ -306,6 +309,12 @@ function applySettings(){
   $$('.js-addr').forEach(e=>e.textContent=s.address);
   $$('.js-hours').forEach(e=>e.textContent=hoursText());
   $$('.js-phone').forEach(e=>{e.textContent=s.phone;e.href='tel:'+s.phone.replace(/[^+\d]/g,'');});
+  const hs=$('#heroStats');
+  if(hs){
+    const st=(s.stats||[]).filter(x=>x&&x.v);
+    hs.style.display=st.length?'':'none';
+    hs.innerHTML=st.map(x=>'<div class="hstat"><b>'+esc(x.v)+'</b>'+(x.t?'<span>'+esc(x.t)+'</span>':'')+'</div>').join('');
+  }
   document.title=s.companyName+' — онлайн-запись на шиномонтаж';
 }
 function renderServicesGrid(){
