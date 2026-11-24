@@ -1802,7 +1802,10 @@ function openManualBooking(opts){
     sel.innerHTML=slots.length?slots.map(s=>'<option value="'+s.t+'">'+s.t+'</option>').join(''):'<option value="">нет свободных слотов</option>';
   };
   const updTot=()=>{$('#mbTotal').textContent=fmtMoney(picks().reduce((a,s)=>a+s.price,0));};
-  $('#modalBox').querySelectorAll('[data-mbsvc]').forEach(ch=>ch.addEventListener('change',()=>{updTot();loadMbSlots();}));
+  $('#modalBox').querySelectorAll('[data-mbsvc]').forEach(ch=>ch.addEventListener('change',()=>{
+    ch.closest('.svc-row').classList.toggle('on',ch.checked);
+    updTot();loadMbSlots();
+  }));
   $('#mbDate').addEventListener('change',loadMbSlots);
   $('#mbPhone').addEventListener('input',e=>phoneMask(e.target));
   $('#mbSave').onclick=()=>{
