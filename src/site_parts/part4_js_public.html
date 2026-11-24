@@ -1,0 +1,485 @@
+<script>
+'use strict';
+/* Видимая плашка при любой ошибке скрипта (чтобы сбои не были «немыми») */
+window.addEventListener('error',e=>{
+  try{
+    const t=document.createElement('div');
+    t.style.cssText='position:fixed;top:0;left:0;right:0;z-index:300;background:#7f1d1d;color:#fecaca;font:12.5px/1.4 sans-serif;padding:8px 12px';
+    t.textContent='Ошибка скрипта: '+(e.message||'неизвестная')+' — сообщите об этом разработчику';
+    (document.body||document.documentElement).appendChild(t);
+  }catch(_){}
+});
+/* ================= УТИЛИТЫ ================= */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad2=n=>String(n).padStart(2,'0');
+const isoOf=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+const todayISO=()=>isoOf(new Date());
+const addDaysISO=(base,n)=>{const d=new Date(base+'T00:00:00');d.setDate(d.getDate()+n);return isoOf(d);};
+const toMin=t=>{const p=t.split(':');return (+p[0])*60+(+p[1]);};
+const toHHMM=m=>pad2(Math.floor(m/60))+':'+pad2(m%60);
+const fmtMoney=n=>Number(n||0).toLocaleString('ru-RU')+' ₽';
+const WD=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+function weekdayRu(isoStr){return WD[new Date(isoStr+'T00:00:00').getDay()];}
+function fmtDateShort(isoStr){return isoStr.split('-').reverse().join('.');}
+function fmtDateHuman(isoStr){const d=new Date(isoStr+'T00:00:00');return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})+', '+weekdayRu(isoStr);}
+function fmtDT(ts){const d=new Date(ts);return d.toLocaleDateString('ru-RU')+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());}
+
+/* ================= ДАННЫЕ ================= */
+const LS_KEY='shina_db_v1';
+/* Безопасное хранилище: там, где доступ к localStorage/sessionStorage запрещён
+   (например, изолированный предпросмотр), работаем в памяти, а не падаем. */
+function makeSafeStorage(kind){
+  try{
+    const st=window[kind];
+    st.setItem('__sm_probe__','1');
+    st.removeItem('__sm_probe__');
+    return {st,ok:true};
+  }catch(e){
+    const mem=new Map();
+    return {st:{
+      getItem:k=>mem.has(k)?mem.get(k):null,
+      setItem:(k,v)=>{mem.set(k,String(v));},
+      removeItem:k=>{mem.delete(k);}
+    },ok:false};
+  }
+}
+const LS=makeSafeStorage('localStorage');
+const SS=makeSafeStorage('sessionStorage');
+function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=c[Math.floor(Math.random()*c.length)];return 'SM-'+s;}
+function defaultDB(){
+  const S=(name,cat,icon,desc,price,dur)=>({name,cat,icon,desc,price,dur,active:true});
+  const services=[
+    S('Сезонная смена шин (4 колеса)','Шиномонтаж','🛞','Снятие и установка колёс, без балансировки',3200,60),
+    S('Смена шин + балансировка (4 колеса)','Шиномонтаж','⚙️','Комплекс: снятие, замена резины, балансировка',4800,90),
+    S('Замена одной шины','Шиномонтаж','🛞','Быстрая замена одного колеса',800,20),
+    S('Балансировка (4 колеса)','Шиномонтаж','⚙️','Грузики и проверка на стенде',1400,30),
+    S('Ремонт прокола','Ремонт','🔧','Жгут или грибок, проверка герметичности',900,30),
+    S('Ремонт бокового пореза','Ремонт','🔧','Кордовая заплатка, сложный ремонт',2600,60),
+    S('Переобувка «на дисках» (4 колеса)','Шиномонтаж','🛞','Смена колёс в сборе, без разбортировки',2000,40),
+    S('Сезонное хранение шин','Доп. услуги','📦','Тёплый склад, страховка, 6 месяцев',3000,15),
+    S('Утилизация старых шин (4 шт.)','Доп. услуги','♻️','Официальная утилизация',600,10),
+    S('Проверка давления и подкачка','Доп. услуги','🧰','Экспресс-обслуживание',0,10)
+  ].map((s,i)=>Object.assign({id:i+1},s));
+  const settings={companyName:'ШинаСервис',phone:'+7 (495) 120-45-67',address:'г. Москва, ул. Моторная, 12с3',
+    workStart:'09:00',workEnd:'20:00',interval:60,posts:2,workDays:[1,2,3,4,5,6],blockedDates:[],adminPass:'admin123',
+    employees:[
+      {id:1,name:'Сергей',pin:'1111',color:'#60a5fa',active:true},
+      {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
+    ],
+    shiftStart:todayISO(),shiftFirst:1};
+  const t=todayISO();
+  const mk=(day,time,st,name,phone,car,plate,ids,com)=>({
+    code:genCode(),name,phone,car,plate,
+    services:ids.map(i=>{const s=services.find(x=>x.id===i);return{id:s.id,name:s.name,price:s.price};}),
+    date:addDaysISO(t,day),time,status:st,comment:com||'',
+    total:ids.reduce((a,i)=>a+services.find(x=>x.id===i).price,0),
+    createdAt:Date.now()
+  });
+  const bookings=[
+    mk(0,'11:00','confirmed','Иван Петров','+7 (916) 200-11-22','VW Tiguan','А123ВС77',[2],''),
+    mk(0,'14:00','new','Мария Соколова','+7 (903) 555-30-40','Mazda CX-5','В456МК77',[1,4],''),
+    mk(0,'16:00','done','Алексей Морозов','+7 (925) 100-20-30','Kia Rio','Е789КХ77',[3],''),
+    mk(1,'10:00','new','Дмитрий Волков','+7 (926) 777-45-67','Toyota RAV4','К012ОП77',[2,7],'Прошу позвонить перед визитом'),
+    mk(-3,'12:00','done','Ольга Кузнецова','+7 (915) 300-40-50','Hyundai Creta','М345РС77',[2,8],'')
+  ];
+  bookings.forEach(b=>{b.employeeId=shiftEmpFor(b.date,settings).id;b.empAuto=true;});
+  return {settings,services,bookings};
+}
+/* --- сотрудники и смены --- */
+function shiftEmpFor(dateISO,settings){
+  let emps=(settings.employees||[]).filter(e=>e.active);
+  if(!emps.length)return null;
+  const fi=emps.findIndex(e=>e.id===Number(settings.shiftFirst));
+  if(fi>0)emps.unshift(emps.splice(fi,1)[0]);
+  const d1=new Date(settings.shiftStart+'T00:00:00');
+  const d2=new Date(dateISO+'T00:00:00');
+  const diff=Math.round((d2-d1)/86400000);
+  return emps[((diff%emps.length)+emps.length)%emps.length];
+}
+/* миграция старых/импортированных данных: сотрудники, смена, привязка записей */
+function normalizeDB(d){
+  const def=defaultDB();
+  if(!Array.isArray(d.settings.employees)||!d.settings.employees.length)d.settings.employees=def.settings.employees;
+  d.settings.employees=d.settings.employees.map((e,i)=>({
+    id:Number(e.id)||i+1,name:String(e.name||'Сотрудник '+(i+1)),
+    pin:String(e.pin||String(1000+i*1111)),color:e.color||['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa'][i%5],
+    active:e.active!==false}));
+  const ids=d.settings.employees.map(e=>e.id);
+  if(!ids.includes(Number(d.settings.shiftFirst)))d.settings.shiftFirst=d.settings.employees[0].id;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d.settings.shiftStart||''))d.settings.shiftStart=def.settings.shiftStart;
+  d.bookings.forEach(b=>{
+    if(!b.employeeId||!ids.includes(b.employeeId)){
+      const e=shiftEmpFor(b.date,d.settings);
+      b.employeeId=e?e.id:d.settings.employees[0].id;
+    }
+    if(b.empAuto===undefined)b.empAuto=true;
+  });
+  return d;
+}
+let DB;
+function loadDB(){
+  try{
+    const raw=LS.st.getItem(LS_KEY);
+    if(raw){
+      const d=JSON.parse(raw);
+      if(d&&d.settings&&Array.isArray(d.services)&&Array.isArray(d.bookings)){
+        d.settings=Object.assign(defaultDB().settings,d.settings);
+        return normalizeDB(d);
+      }
+    }
+  }catch(e){}
+  const d=defaultDB();
+  try{LS.st.setItem(LS_KEY,JSON.stringify(d));}catch(e){}
+  return d;
+}
+DB=loadDB();
+const save=()=>{try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}};
+const svcById=id=>DB.services.find(s=>s.id===Number(id));
+const activeServices=()=>DB.services.filter(s=>s.active);
+const empById=id=>DB.settings.employees.find(e=>e.id===Number(id));
+const activeEmps=()=>DB.settings.employees.filter(e=>e.active);
+const empOn=dateISO=>shiftEmpFor(dateISO,DB.settings);
+const empBadge=empId=>{const e=empById(empId);return e?'<span class="emp-b" style="--ec:'+e.color+'"><i></i>'+esc(e.name)+'</span>':'';};
+/* выручка и диапазоны */
+const liveDone=b=>b.status==='confirmed'||b.status==='done';
+const revSum=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).reduce((a,b)=>a+(b.total||0),0);
+const cntBook=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).length;
+function weekRange(){const n=new Date();const dow=(n.getDay()+6)%7;const mon=new Date(n.getFullYear(),n.getMonth(),n.getDate()-dow);return{from:isoOf(mon),to:todayISO()};}
+function monthRange(){const t=todayISO();return{from:t.slice(0,8)+'01',to:t};}
+/* свободные слоты при редактировании (исключая саму запись) */
+function freeTimesFor(dateISO,needDur,excludeCode){
+  const s=DB.settings;
+  if(isClosed(dateISO))return [];
+  const end=toMin(s.workEnd);const dur=Math.max(30,needDur||60);
+  const now=new Date();const isToday=dateISO===todayISO();
+  const cutoff=isToday?now.getHours()*60+now.getMinutes()+15:-1;
+  const out=[];
+  for(let m=toMin(s.workStart);m<end;m+=s.interval){
+    const t=toHHMM(m);
+    const used=liveBookings().filter(x=>x.date===dateISO&&x.time===t&&x.code!==excludeCode).length;
+    if((m>cutoff)&&(s.posts-used>0)&&(m+dur<=end))out.push(t);
+  }
+  return out;
+}
+const liveBookings=()=>DB.bookings.filter(b=>b.status!=='cancelled');
+const activeAt=(date,time)=>liveBookings().filter(b=>b.date===date&&b.time===time).length;
+function isClosed(dateISO){
+  const s=DB.settings;
+  const dow=new Date(dateISO+'T00:00:00').getDay();
+  if(!s.workDays.includes(dow))return true;
+  return (s.blockedDates||[]).includes(dateISO);
+}
+function daySlots(dateISO,needDur){
+  const s=DB.settings;
+  if(isClosed(dateISO))return [];
+  const out=[];const end=toMin(s.workEnd);
+  const now=new Date();const isToday=dateISO===todayISO();
+  const cutoff=isToday?now.getHours()*60+now.getMinutes()+15:-1;
+  const dur=Math.max(30,needDur||60);
+  for(let m=toMin(s.workStart);m<end;m+=s.interval){
+    const free=s.posts-activeAt(dateISO,toHHMM(m));
+    const blocked=(m<=cutoff)||(free<=0)||(m+dur>end);
+    out.push({t:toHHMM(m),free,blocked});
+  }
+  return out;
+}
+function slotAvailable(dateISO,time,needDur,excludeCode){
+  const s=DB.settings;
+  if(isClosed(dateISO))return false;
+  const m=toMin(time);const end=toMin(s.workEnd);
+  const dur=Math.max(30,needDur||60);
+  if(m<toMin(s.workStart)||m+dur>end)return false;
+  const now=new Date();
+  if(dateISO===todayISO()&&m<=now.getHours()*60+now.getMinutes()+15)return false;
+  const used=liveBookings().filter(b=>b.date===dateISO&&b.time===time&&b.code!==excludeCode).length;
+  return used<s.posts;
+}
+const ST={new:{t:'Новая',c:'st-new'},confirmed:{t:'Подтверждена',c:'st-conf'},done:{t:'Выполнена',c:'st-done'},cancelled:{t:'Отменена',c:'st-cancel'}};
+const stBadge=st=>{const m=ST[st]||ST.new;return '<span class="st '+m.c+'">'+m.t+'</span>';};
+function hoursText(){
+  const s=DB.settings;const d=Array.from(new Set(s.workDays)).sort((a,b)=>a-b);
+  if(d.length===7)return 'Ежедневно '+s.workStart+'–'+s.workEnd;
+  if(!d.length)return 'График уточняйте по телефону';
+  const n=WD;let parts=[];let start=d[0],prev=d[0];
+  for(let i=1;i<=d.length;i++){
+    if(d[i]===prev+1){prev=d[i];continue;}
+    parts.push(start===prev?n[start]:n[start]+'–'+n[prev]);
+    start=d[i];prev=d[i];
+  }
+  return parts.join(', ')+': '+s.workStart+'–'+s.workEnd;
+}
+
+/* ================= ТОСТЫ И МОДАЛКИ ================= */
+function toast(msg,type){
+  const el=document.createElement('div');
+  el.className='toast '+(type||'ok');
+  el.textContent=msg;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{el.style.transition='.3s';el.style.opacity='0';setTimeout(()=>el.remove(),320);},3400);
+}
+function openModal(html){$('#modalBox').innerHTML=html;$('#modal').classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(){$('#modal').classList.remove('open');$('#modalBox').innerHTML='';document.body.style.overflow='';}
+$('#modal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget||e.target.closest('[data-mx]'))closeModal();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function openConfirm(title,text,okLabel,cb){
+  openModal(
+    '<div class="m-head"><h3>'+esc(title)+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body"><p style="margin:0">'+text+'</p></div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="cfOk">'+esc(okLabel||'Подтвердить')+'</button></div>'
+  );
+  $('#cfOk').onclick=()=>{closeModal();cb();};
+}
+function phoneMask(inp){
+  let d=(inp.value||'').replace(/\D/g,'');
+  if(d&&d[0]==='8')d='7'+d.slice(1);
+  if(d&&d[0]!=='7')d='7'+d;
+  d=d.slice(0,11);
+  let out='';
+  if(d.length){out='+7';
+    if(d.length>1)out+=' ('+d.slice(1,4);
+    if(d.length>=5)out+=') '+d.slice(4,7);
+    if(d.length>=8)out+='-'+d.slice(7,9);
+    if(d.length>=10)out+='-'+d.slice(9,11);
+  }
+  inp.value=out;
+}
+const phoneOk=v=>{const d=(v||'').replace(/\D/g,'');return d.length===11&&d[0]==='7';};
+
+/* ================= ПУБЛИЧНАЯ ЧАСТЬ ================= */
+function applySettings(){
+  const s=DB.settings;
+  $$('.js-co').forEach(e=>e.textContent=s.companyName);
+  $$('.js-addr').forEach(e=>e.textContent=s.address);
+  $$('.js-hours').forEach(e=>e.textContent=hoursText());
+  $$('.js-phone').forEach(e=>{e.textContent=s.phone;e.href='tel:'+s.phone.replace(/[^+\d]/g,'');});
+  document.title=s.companyName+' — онлайн-запись на шиномонтаж';
+}
+function renderServicesGrid(){
+  const list=activeServices();
+  const g=$('#svcGrid');
+  if(!list.length){g.innerHTML='<div class="msg" style="grid-column:1/-1">Услуги временно недоступны — позвоните нам: <a class="js-phone" href="#"></a></div>';applySettings();return;}
+  g.innerHTML=list.map(s=>
+    '<article class="svc-card">'+
+      '<div class="svc-ico">'+(s.icon||'🛞')+'</div>'+
+      '<h3>'+esc(s.name)+'</h3>'+
+      '<p>'+esc(s.desc||'')+'</p>'+
+      '<div class="svc-meta"><div><div class="svc-price">'+(s.price===0?'Бесплатно':fmtMoney(s.price))+'</div><div class="svc-dur">≈ '+s.dur+' мин</div></div>'+
+      '<button class="btn btn-o btn-s" data-choose="'+s.id+'">Выбрать</button></div>'+
+    '</article>').join('');
+}
+
+/* --- мастер записи --- */
+const bk={step:1,services:new Set(),date:'',time:'',name:'',phone:'',car:'',plate:'',comment:'',agree:false};
+let bkDone=false;
+function selList(){return Array.from(bk.services).map(i=>svcById(i)).filter(Boolean);}
+function selCalc(){const l=selList();return{total:l.reduce((a,s)=>a+s.price,0),dur:Math.max(30,l.reduce((a,s)=>a+s.dur,0))};}
+function renderProg(){
+  [1,2,3].forEach(i=>{
+    const el=$('#pi'+i);
+    el.classList.toggle('act',!bkDone&&bk.step===i);
+    el.classList.toggle('done',bkDone||bk.step>i);
+    el.querySelector('b').textContent=(bkDone||bk.step>i)?'✓':i;
+  });
+}
+function totHtml(){const c=selCalc();return '<div class="tot"><div><div>Итого: '+fmtMoney(c.total)+'</div><div class="t2">Время работ: ≈ '+c.dur+' мин</div></div></div>';}
+function step1Html(){
+  const list=activeServices();
+  if(!list.length)return '<div class="msg warn">Услуги временно недоступны. Позвоните нам: <a class="js-phone" href="#"></a></div>';
+  return list.map(s=>
+    '<label class="svc-row '+(bk.services.has(s.id)?'on':'')+'">'+
+      '<input type="checkbox" data-svc="'+s.id+'" '+(bk.services.has(s.id)?'checked':'')+'>'+
+      '<span class="cb">✓</span>'+
+      '<span class="n"><b>'+esc(s.name)+'</b><span>'+esc(s.desc||'')+' · ≈ '+s.dur+' мин</span></span>'+
+      '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span>'+
+    '</label>').join('')+totHtml();
+}
+function step2Html(){
+  return '<div class="drow">'+
+    '<div><label class="lb req">Дата визита</label><input type="date" id="bkDate" class="inp" min="'+todayISO()+'" value="'+bk.date+'"></div>'+
+    '<div class="chips"><button type="button" class="chipbtn" data-qd="0">Сегодня</button><button type="button" class="chipbtn" data-qd="1">Завтра</button></div>'+
+  '</div><div id="slotArea"></div>';
+}
+function step3Html(){
+  const l=selList();const c=selCalc();
+  return '<div class="sumbox">'+
+    '<div class="row"><span>Услуги</span><b>'+esc(l.map(s=>s.name).join(' + '))+'</b></div>'+
+    '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(bk.date)+', '+bk.time+'</b></div>'+
+    '<div class="row"><span>Длительность</span><b>≈ '+c.dur+' мин</b></div>'+
+    '<div class="row"><span>К оплате</span><b style="color:var(--acc2)">'+fmtMoney(c.total)+'</b></div>'+
+  '</div>'+
+  '<div class="f-grid">'+
+    '<div><label class="lb req">Ваше имя</label><input id="bkName" class="inp" placeholder="Иван" value="'+esc(bk.name)+'"></div>'+
+    '<div><label class="lb req">Телефон</label><input id="bkPhone" class="inp" inputmode="tel" placeholder="+7 (___) ___-__-__" value="'+esc(bk.phone)+'"></div>'+
+    '<div><label class="lb">Автомобиль</label><input id="bkCar" class="inp" placeholder="Kia Rio" value="'+esc(bk.car)+'"></div>'+
+    '<div><label class="lb">Госномер</label><input id="bkPlate" class="inp" placeholder="А123ВС77" value="'+esc(bk.plate)+'"></div>'+
+    '<div class="full"><label class="lb">Комментарий</label><textarea id="bkCom" class="inp" placeholder="Например: шины лежат в багажнике">'+esc(bk.comment)+'</textarea></div>'+
+  '</div>'+
+  '<label class="consent"><input type="checkbox" id="bkAgree" '+(bk.agree?'checked':'')+'><span>Согласен(на) на обработку персональных данных и на подтверждение записи по телефону.</span></label>';
+}
+function renderSlots(){
+  const area=$('#slotArea');if(!area)return;
+  if(!bk.date){area.innerHTML='<div class="msg">Выберите дату визита — покажем свободное время.</div>';return;}
+  if(isClosed(bk.date)){area.innerHTML='<div class="msg warn">'+fmtDateHuman(bk.date)+' — нерабочий день. Выберите другую дату или позвоните нам: <a class="js-phone" href="#"></a></div>';applySettings();return;}
+  const c=selCalc();
+  const slots=daySlots(bk.date,c.dur);
+  const freeSlots=slots.filter(s=>!s.blocked);
+  let h='<div class="lb" style="margin-bottom:8px">Свободное время · визит ≈ '+c.dur+' мин</div>';
+  if(!freeSlots.length){
+    h+='<div class="msg warn">На '+fmtDateHuman(bk.date)+' свободных слотов нет. Выберите другую дату или позвоните нам.</div>';
+  }else{
+    h+='<div class="slots">'+slots.map(s=>
+      '<button type="button" class="slot '+(bk.time===s.t?'sel':'')+'" data-t="'+s.t+'" '+(s.blocked?'disabled title="Занято или время прошло"':'')+'>'+s.t+
+      ((!s.blocked&&s.free<DB.settings.posts)?'<span class="fr">'+s.free+'</span>':'')+'</button>').join('')+'</div>';
+  }
+  area.innerHTML=h;
+}
+function renderStep(){
+  renderProg();
+  const p=$('#bkPane');
+  $('#bkBack').style.visibility=bk.step===1?'hidden':'visible';
+  $('#bkNext').textContent=bk.step===3?'Подтвердить запись':'Далее →';
+  if(bk.step===1){
+    p.innerHTML=step1Html();
+    if(bk.step===1&&p.querySelector('.js-phone'))applySettings();
+    p.querySelectorAll('[data-svc]').forEach(ch=>{
+      ch.addEventListener('change',()=>{
+        const id=Number(ch.dataset.svc);
+        if(ch.checked)bk.services.add(id);else bk.services.delete(id);
+        renderStep();
+      });
+    });
+  }else if(bk.step===2){
+    p.innerHTML=step2Html();
+    $('#bkDate').addEventListener('change',e=>{bk.date=e.target.value||'';bk.time='';renderSlots();});
+    p.querySelectorAll('[data-qd]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        bk.date=addDaysISO(todayISO(),Number(btn.dataset.qd));bk.time='';
+        $('#bkDate').value=bk.date;renderSlots();
+      });
+    });
+    renderSlots();
+  }else if(bk.step===3){
+    p.innerHTML=step3Html();
+    $('#bkName').addEventListener('input',e=>bk.name=e.target.value);
+    $('#bkPhone').addEventListener('input',e=>{phoneMask(e.target);bk.phone=e.target.value;});
+    $('#bkCar').addEventListener('input',e=>bk.car=e.target.value);
+    $('#bkPlate').addEventListener('input',e=>bk.plate=e.target.value);
+    $('#bkCom').addEventListener('input',e=>bk.comment=e.target.value);
+    $('#bkAgree').addEventListener('change',e=>bk.agree=e.target.checked);
+  }
+}
+function goNext(){
+  if(bkDone){return;}
+  if(bk.step===1){
+    if(!bk.services.size){toast('Выберите хотя бы одну услугу','err');return;}
+    bk.step=2;renderStep();
+  }else if(bk.step===2){
+    if(!bk.date){toast('Выберите дату визита','err');return;}
+    if(!bk.time){toast('Выберите время визита','err');return;}
+    bk.step=3;renderStep();
+  }else submitBooking();
+}
+function goBack(){if(bkDone)return;if(bk.step>1){bk.step--;renderStep();}}
+$('#bkPane').addEventListener('click',e=>{
+  const b=e.target.closest('.slot:not(:disabled)');
+  if(!b)return;
+  bk.time=b.dataset.t;
+  $$('#bkPane .slot').forEach(x=>x.classList.toggle('sel',x===b));
+});
+$('#bkBack').addEventListener('click',goBack);
+$('#bkNext').addEventListener('click',goNext);
+function submitBooking(){
+  const name=(bk.name||'').trim();
+  if(name.length<2){toast('Укажите имя (минимум 2 буквы)','err');return;}
+  if(!phoneOk(bk.phone)){toast('Укажите телефон в формате +7 XXX XXX-XX-XX','err');return;}
+  if(!bk.agree){toast('Подтвердите согласие на обработку данных','err');return;}
+  const c=selCalc();
+  if(!slotAvailable(bk.date,bk.time,c.dur)){
+    toast('Это время уже занято — выберите другое','err');
+    bk.step=2;bk.time='';renderStep();return;
+  }
+  const l=selList();
+  const emp=empOn(bk.date);
+  const b={code:genCode(),name,phone:bk.phone,car:(bk.car||'').trim(),plate:(bk.plate||'').trim().toUpperCase(),
+    services:l.map(s=>({id:s.id,name:s.name,price:s.price})),
+    date:bk.date,time:bk.time,comment:(bk.comment||'').trim(),
+    total:l.reduce((a,s)=>a+s.price,0),status:'new',createdAt:Date.now(),
+    employeeId:emp?emp.id:null,empAuto:true};
+  DB.bookings.push(b);save();
+  showSuccess(b);
+}
+function showSuccess(b){
+  bkDone=true;renderProg();
+  $('#bkPane').innerHTML=
+    '<div class="okwrap">'+
+      '<div class="okico">✓</div>'+
+      '<h3 style="margin-bottom:2px">Вы записаны!</h3>'+
+      '<div class="okcode">'+b.code+'</div>'+
+      '<p style="color:var(--mut);max-width:440px;margin:10px auto 18px">Администратор перезвонит на '+esc(b.phone)+' для подтверждения. Сохраните код записи — он пригодится в разделе «Мои записи».</p>'+
+      '<div class="sumbox" style="text-align:left;margin-bottom:0">'+
+        '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(b.date)+', '+b.time+'</b></div>'+
+        '<div class="row"><span>Услуги</span><b>'+esc(b.services.map(s=>s.name).join(' + '))+'</b></div>'+
+        (empById(b.employeeId)?'<div class="row"><span>Ваш мастер</span><b>'+esc(empById(b.employeeId).name)+'</b></div>':'')+
+        '<div class="row"><span>Сумма</span><b>'+fmtMoney(b.total)+'</b></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">'+
+        '<button class="btn btn-o" id="okAgain">Записать ещё</button>'+
+        '<button class="btn btn-p" id="okMy">Мои записи</button>'+
+      '</div>'+
+    '</div>';
+  $('#bkNav').style.display='none';
+  $('#okAgain').addEventListener('click',()=>{resetBk();document.getElementById('booking').scrollIntoView();});
+  $('#okMy').addEventListener('click',()=>{$('#myPhone').value=b.phone;findMy();document.getElementById('my').scrollIntoView();});
+}
+function resetBk(){
+  bk.step=1;bk.services=new Set();bk.date='';bk.time='';bk.agree=false;
+  bkDone=false;$('#bkNav').style.display='';
+  renderStep();
+}
+function chooseService(id){
+  bk.services.add(Number(id));
+  bkDone=false;bk.step=1;$('#bkNav').style.display='';
+  renderStep();
+  document.getElementById('booking').scrollIntoView();
+  toast('Услуга добавлена в запись');
+}
+
+/* --- мои записи --- */
+function findMy(){
+  const wrap=$('#myList');
+  const dig=($('#myPhone').value||'').replace(/\D/g,'');
+  if(dig.length!==11||dig[0]!=='7'){wrap.innerHTML='<div class="msg warn" style="max-width:640px">Введите телефон в формате +7 XXX XXX-XX-XX — как при записи.</div>';return;}
+  const items=DB.bookings.filter(b=>b.phone.replace(/\D/g,'')===dig).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  if(!items.length){wrap.innerHTML='<div class="msg">По этому телефону записей не найдено. Проверьте номер или создайте новую запись выше.</div>';return;}
+  const nowM=new Date().getHours()*60+new Date().getMinutes();
+  wrap.innerHTML=items.map(b=>{
+    const future=b.date>todayISO()||(b.date===todayISO()&&toMin(b.time)>nowM);
+    const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
+    return '<div class="my-item '+(b.status==='cancelled'?'cancelled':'')+'">'+
+      '<div class="l"><b>'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time+' · '+b.code+'</b>'+
+      '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span></div>'+
+      '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+
+      (canCancel?'<button class="btn btn-d btn-s" data-cancel="'+b.code+'">Отменить</button>':'')+
+      '</div></div>';
+  }).join('');
+}
+$('#myPhone').addEventListener('input',e=>phoneMask(e.target));
+$('#myPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findMy();}});
+$('#myFind').addEventListener('click',findMy);
+$('#myList').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-cancel]');if(!btn)return;
+  const b=DB.bookings.find(x=>x.code===btn.dataset.cancel);if(!b)return;
+  openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
+    b.status='cancelled';save();findMy();toast('Запись отменена');
+  });
+});
+/* делегирование: выбрать услугу из сетки */
+$('#svcGrid').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-choose]');if(!btn)return;
+  chooseService(btn.dataset.choose);
+});
+</script>

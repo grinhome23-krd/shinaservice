@@ -1,0 +1,255 @@
+
+<div id="loginView" hidden>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Админ-панель</span>
+      </div>
+      <p style="text-align:center;color:var(--mut);font-size:13.5px">Вход для администраторов <span class="js-co">ШинаСервис</span></p>
+      <label class="lb req">Пароль</label>
+      <input type="password" class="inp" id="loginPass" placeholder="Введите пароль">
+      <div class="err" id="loginErr">Неверный пароль. Попробуйте ещё раз.</div>
+      <button class="btn btn-p" id="loginBtn" style="width:100%;margin-top:14px">Войти</button>
+      <button class="btn btn-o" id="loginBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
+      <p class="hint">Сотрудник? <a href="#" id="loginStaff">Войти по ПИН-коду</a></p>
+      <div class="hint">Демо-пароль по умолчанию: admin123 — смените его в «Настройках» после входа.</div>
+    </div>
+  </div>
+</div>
+
+<div id="staffLogin" hidden>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Панель сотрудника</span>
+      </div>
+      <p style="text-align:center;color:var(--mut);font-size:13.5px">Выберите себя и введите ПИН-код</p>
+      <div class="emp-chips" id="stEmpChips"></div>
+      <label class="lb req">ПИН-код</label>
+      <input type="password" class="inp" id="stPin" inputmode="numeric" maxlength="8" placeholder="••••" style="text-align:center;letter-spacing:8px;font-size:20px">
+      <div class="err" id="stErr">Неверный ПИН-код. Попробуйте ещё раз.</div>
+      <button class="btn btn-p" id="stLoginBtn" style="width:100%;margin-top:14px">Войти</button>
+      <button class="btn btn-o" id="stBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
+      <div class="hint">ПИН-коды выдаёт администратор: Настройки → «Сотрудники и смены».</div>
+    </div>
+  </div>
+</div>
+
+<div id="staff" hidden>
+  <header class="hdr a-head">
+    <div class="container hdr-in">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span><span class="js-co">ШинаСервис</span><small>панель сотрудника</small></span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-o btn-s" id="stSite">На сайт</button>
+        <button class="btn btn-d btn-s" id="stLogout">Выйти</button>
+      </div>
+    </div>
+  </header>
+  <div class="container" style="padding-top:16px;padding-bottom:44px">
+    <div class="st-head" id="stHead"></div>
+    <div class="st-stats" id="stStats"></div>
+    <div class="chips st-filters" id="stFilters"></div>
+    <div id="stList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="admin" hidden>
+  <header class="hdr a-head">
+    <div class="container hdr-in">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span><span class="js-co">ШинаСервис</span><small>админ-панель</small></span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-o btn-s" id="aSite">На сайт</button>
+        <button class="btn btn-d btn-s" id="aLogout">Выйти</button>
+      </div>
+    </div>
+  </header>
+  <div class="container">
+    <nav class="a-tabs" id="aTabs">
+      <button class="a-tab on" data-tab="dash">📊 Панель</button>
+      <button class="a-tab" data-tab="bookings">📋 Записи</button>
+      <button class="a-tab" data-tab="services">🛞 Услуги</button>
+      <button class="a-tab" data-tab="schedule">🕐 Расписание</button>
+      <button class="a-tab" data-tab="settings">⚙️ Настройки</button>
+    </nav>
+
+    <section id="a-dash" class="a-pane" style="padding-bottom:40px">
+      <div class="stat-grid">
+        <div class="stat"><span>Записей на сегодня</span><b id="statToday">0</b></div>
+        <div class="stat"><span>Новых (не подтверждено)</span><b id="statNew" style="color:var(--acc2)">0</b></div>
+        <div class="stat"><span>На 7 дней вперёд</span><b id="statWeek">0</b></div>
+        <div class="stat"><span>Выручка за месяц</span><b id="statRev" style="color:var(--ok)">0 ₽</b></div>
+      </div>
+      <div class="a-grid">
+        <div class="panel">
+          <h3>Загрузка за последние 7 дней</h3>
+          <div class="chart" id="chart"></div>
+        </div>
+        <div class="panel">
+          <h3>Записи на сегодня</h3>
+          <div id="todayList"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>Новые записи — требуют подтверждения</h3>
+        <div id="newList"></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>Смены мастеров</h3>
+        <div id="shiftInfo"></div>
+      </div>
+    </section>
+
+    <section id="a-bookings" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="tb">
+        <select class="inp inp-sm" id="fStatus">
+          <option value="all">Все статусы</option>
+          <option value="new">Новые</option>
+          <option value="confirmed">Подтверждённые</option>
+          <option value="done">Выполненные</option>
+          <option value="cancelled">Отменённые</option>
+        </select>
+        <select class="inp inp-sm" id="fRange">
+          <option value="all">За всё время</option>
+          <option value="today">Сегодня</option>
+          <option value="tomorrow">Завтра</option>
+          <option value="week">Ближайшие 7 дней</option>
+          <option value="future">Будущие</option>
+          <option value="past">Прошлые</option>
+        </select>
+        <input class="inp inp-sm grow" id="fQ" placeholder="Поиск: имя, телефон, код, авто…">
+        <select class="inp inp-sm" id="fEmp"><option value="all">Все мастера</option></select>
+        <div class="spacer"></div>
+        <button class="btn btn-o btn-s" id="btnCsv">⬇ CSV</button>
+        <button class="btn btn-p btn-s" id="btnAddBook">+ Записать клиента</button>
+      </div>
+      <div style="color:var(--dim);font-size:12.5px;margin-bottom:8px" id="bkCount"></div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Код</th><th>Дата</th><th>Клиент</th><th class="hide-m">Авто</th><th class="hide-m">Услуги</th><th class="hide-m">Мастер</th><th>Сумма</th><th>Статус</th><th></th></tr></thead>
+          <tbody id="bkBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="a-services" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="tb">
+        <div class="spacer"></div>
+        <button class="btn btn-p btn-s" id="btnAddSvc">+ Добавить услугу</button>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Услуга</th><th>Категория</th><th>Цена</th><th>Время</th><th>Показ</th><th></th></tr></thead>
+          <tbody id="svcBody"></tbody>
+        </table>
+      </div>
+      <p style="color:var(--dim);font-size:12.5px;margin-top:10px">Скрытая услуга перестаёт показываться клиентам, но остаётся в уже созданных записях.</p>
+    </section>
+
+    <section id="a-schedule" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="a-grid">
+        <div class="panel">
+          <h3>Рабочее время</h3>
+          <label class="lb">Рабочие дни</label>
+          <div class="wdays" id="wdaysBox"></div>
+          <div class="f-grid" style="margin-top:14px">
+            <div><label class="lb">Начало дня</label><input type="time" class="inp" id="wsStart"></div>
+            <div><label class="lb">Конец дня</label><input type="time" class="inp" id="wsEnd"></div>
+            <div><label class="lb">Интервал слотов</label>
+              <select class="inp" id="wsInt">
+                <option value="30">30 минут</option>
+                <option value="45">45 минут</option>
+                <option value="60">1 час</option>
+                <option value="90">1,5 часа</option>
+              </select>
+            </div>
+            <div><label class="lb">Постов на один слот</label>
+              <select class="inp" id="wsPosts">
+                <option value="1">1 авто</option>
+                <option value="2">2 авто</option>
+                <option value="3">3 авто</option>
+                <option value="4">4 авто</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-p" id="wsSave" style="margin-top:16px">Сохранить расписание</button>
+        </div>
+        <div class="panel">
+          <h3>Нерабочие дни (праздники)</h3>
+          <p style="color:var(--mut);font-size:13.5px">В эти дни запись будет закрыта независимо от графика.</p>
+          <div class="drow">
+            <div style="flex:1;min-width:170px"><input type="date" class="inp" id="blDate"></div>
+            <button class="btn btn-o" id="blAdd">+ Добавить</button>
+          </div>
+          <div class="blist" id="blList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="a-settings" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="a-grid">
+        <div>
+          <div class="panel">
+            <h3>Данные автосервиса</h3>
+            <div class="f-grid">
+              <div class="full"><label class="lb req">Название</label><input class="inp" id="stName"></div>
+              <div><label class="lb req">Телефон</label><input class="inp" id="stPhone"></div>
+              <div><label class="lb req">Адрес</label><input class="inp" id="stAddr"></div>
+            </div>
+            <button class="btn btn-p" id="stSave" style="margin-top:16px">Сохранить</button>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <h3>Сотрудники и смены</h3>
+            <div id="empList"></div>
+            <button class="btn btn-o btn-s" id="btnAddEmp" style="margin-top:12px">+ Добавить сотрудника</button>
+            <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">
+              <h3 style="margin-bottom:8px">График смен</h3>
+              <p class="mut-sm">Активные сотрудники чередуются через день, начиная с даты старта: в первый день работает выбранный ниже сотрудник. Деактивированный сотрудник пропадает из ротации, его записи остаются.</p>
+              <div class="f-grid">
+                <div><label class="lb">Дата старта графика</label><input type="date" class="inp" id="shStart"></div>
+                <div><label class="lb">Работает в день старта</label><select class="inp" id="shFirst"></select></div>
+              </div>
+              <div class="msg" id="shPreview" style="margin-top:12px"></div>
+              <button class="btn btn-p btn-s" id="shSave" style="margin-top:12px">Сохранить график</button>
+            </div>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <h3>Данные (резервная копия)</h3>
+            <p style="color:var(--mut);font-size:13.5px">Все записи хранятся в браузере (localStorage). Делайте резервную копию JSON и переносите её на другое устройство.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <button class="btn btn-o btn-s" id="btnExpJson">⬇ Экспорт JSON</button>
+              <label class="btn btn-o btn-s" style="cursor:pointer">⬆ Импорт JSON<input type="file" id="impFile" accept=".json,application/json" hidden></label>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h3>Безопасность</h3>
+            <div class="f-grid">
+              <div class="full"><label class="lb req">Текущий пароль</label><input type="password" class="inp" id="pwCur"></div>
+              <div><label class="lb req">Новый пароль</label><input type="password" class="inp" id="pwNew"></div>
+              <div><label class="lb req">Повторите новый</label><input type="password" class="inp" id="pwNew2"></div>
+            </div>
+            <button class="btn btn-p" id="pwSave" style="margin-top:16px">Сменить пароль</button>
+          </div>
+          <div class="panel danger" style="margin-top:14px">
+            <h3 style="color:var(--bad)">Сброс данных</h3>
+            <p style="color:var(--mut);font-size:13.5px">Полностью удалит все записи, услуги и настройки и вернёт демо-состояние. Действие необратимо.</p>
+            <button class="btn btn-d" id="btnReset">Сбросить всё</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div class="modal" id="modal"><div class="modal-box" id="modalBox"></div></div>
+<noscript><div style="padding:20px;text-align:center">Для работы записи включите JavaScript.</div></noscript>

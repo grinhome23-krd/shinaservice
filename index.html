@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ШинаСервис — онлайн-запись на шиномонтаж</title>
+<meta name="description" content="Онлайн-запись на шиномонтаж: сезонная смена шин, балансировка, ремонт проколов. Выберите услуги и удобное время — без очередей.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='%23f59e0b' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='3' fill='none' stroke='%23f59e0b' stroke-width='2'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b0e13;--bg2:#0f131b;--card:#141924;--card2:#171d2a;
+  --line:#232b3b;--line2:#2c3650;
+  --text:#e9edf5;--mut:#93a0b4;--dim:#6b7890;
+  --acc:#f59e0b;--acc2:#fbbf24;--acc-d:#b45309;
+  --ok:#34d399;--bad:#f87171;--info:#60a5fa;
+  --r:16px;--r2:11px;--sh:0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+h1,h2,h3,h4{line-height:1.25;margin:0 0 .5em}
+p{margin:0 0 1em}
+a{color:var(--acc2);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit}
+img{max-width:100%}
+.container{max-width:1120px;margin:0 auto;padding:0 18px}
+section{scroll-margin-top:86px}
+/* --- header --- */
+.hdr{position:sticky;top:0;z-index:50;background:rgba(11,14,19,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.hdr-in{display:flex;align-items:center;gap:16px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:.3px;color:var(--text);white-space:nowrap}
+.logo svg{width:30px;height:30px;color:var(--acc);flex:none}
+.logo small{color:var(--dim);font-weight:600;font-size:11px;display:block;letter-spacing:.5px}
+.nav{display:flex;gap:2px;margin-left:auto}
+.nav a{color:var(--mut);padding:8px 12px;border-radius:10px;font-weight:600;font-size:14px}
+.nav a:hover{color:var(--text);background:var(--card);text-decoration:none}
+.burger{display:none;margin-left:auto;background:none;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:8px 11px;font-size:17px;line-height:1}
+.mnav{display:none;border-top:1px solid var(--line);background:var(--bg2)}
+.mnav.open{display:block}
+.mnav a{display:block;padding:13px 18px;color:var(--text);font-weight:600;border-bottom:1px solid var(--line)}
+.mnav a:last-child{border-bottom:none}
+/* --- buttons --- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;border:1px solid transparent;font-weight:700;padding:11px 18px;font-size:14.5px;transition:.15s;white-space:nowrap}
+.btn-p{background:var(--acc);color:#161006}
+.btn-p:hover{background:var(--acc2)}
+.btn-o{background:transparent;border-color:var(--line2);color:var(--text)}
+.btn-o:hover{border-color:var(--acc);color:var(--acc2)}
+.btn-d{background:transparent;border-color:rgba(248,113,113,.4);color:var(--bad)}
+.btn-d:hover{background:rgba(248,113,113,.1)}
+.btn-ok{background:rgba(52,211,153,.15);color:var(--ok);border:1px solid rgba(52,211,153,.35)}
+.btn-s{padding:7px 12px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* --- hero --- */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:radial-gradient(900px 420px at 85% -10%,rgba(245,158,11,.13),transparent 60%),radial-gradient(700px 380px at -10% 110%,rgba(96,165,250,.08),transparent 60%)}
+.hero-in{padding:clamp(46px,8vw,90px) 0;max-width:780px;position:relative;z-index:1}
+.kick{display:inline-flex;align-items:center;gap:8px;color:var(--acc2);font-weight:700;font-size:12.5px;letter-spacing:1.2px;text-transform:uppercase;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);padding:7px 14px;border-radius:999px;margin-bottom:20px}
+.hero h1{font-size:clamp(30px,5.4vw,52px);font-weight:800;margin:0 0 14px}
+.hero h1 em{font-style:normal;color:var(--acc)}
+.hero-sub{color:var(--mut);font-size:clamp(15px,2vw,17.5px);max-width:580px;margin-bottom:26px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+.hero-chips{display:flex;gap:10px;flex-wrap:wrap}
+.hchip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:13.5px;color:var(--dim)}
+.hchip b{color:var(--text);font-weight:600}
+.hero-stats{display:flex;gap:clamp(22px,4.5vw,52px);margin-top:34px;flex-wrap:wrap}
+.hstat b{display:block;font-size:clamp(20px,3vw,26px)}
+.hstat span{color:var(--dim);font-size:13px}
+.ring{position:absolute;border-radius:50%;pointer-events:none}
+.ring.r1{width:520px;height:520px;right:-150px;top:-170px;border:2px dashed rgba(245,158,11,.18)}
+.ring.r2{width:340px;height:340px;right:30px;bottom:-190px;border:2px solid rgba(245,158,11,.1)}
+/* --- sections --- */
+.sec{padding:clamp(44px,7vw,76px) 0}
+.sec.alt{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sec-head{max-width:660px;margin-bottom:32px}
+.sec-t{font-size:clamp(23px,3.4vw,32px);font-weight:800}
+.sec-t em{font-style:normal;color:var(--acc)}
+.sec-d{color:var(--mut);margin:0}
+/* --- services grid --- */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.svc-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:10px;transition:.15s}
+.svc-card:hover{border-color:var(--line2);transform:translateY(-2px)}
+.svc-ico{font-size:26px}
+.svc-card h3{font-size:16.5px;margin:0}
+.svc-card p{color:var(--mut);font-size:13.5px;margin:0;flex:1}
+.svc-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.svc-price{font-weight:800;color:var(--acc2);font-size:17px}
+.svc-dur{color:var(--dim);font-size:12.5px}
+/* --- how steps --- */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px}
+.step-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.step-n{width:34px;height:34px;border-radius:50%;background:rgba(245,158,11,.14);color:var(--acc2);display:flex;align-items:center;justify-content:center;font-weight:800;margin-bottom:12px}
+.step-card h3{font-size:15.5px}
+.step-card p{color:var(--mut);font-size:13.5px;margin:0}
+/* --- wizard --- */
+.bk-wrap{max-width:780px;margin:0 auto}
+.bk-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.prog{display:flex;border-bottom:1px solid var(--line)}
+.prog-i{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;padding:14px 12px;color:var(--dim);font-weight:600;font-size:13.5px;border-bottom:2px solid transparent}
+.prog-i b{width:26px;height:26px;border-radius:50%;background:var(--bg2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12.5px;flex:none}
+.prog-i.act{color:var(--text);border-bottom-color:var(--acc)}
+.prog-i.act b{background:var(--acc);color:#161006;border-color:var(--acc)}
+.prog-i.done{color:var(--ok)}
+.prog-i.done b{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.4);color:var(--ok)}
+.bk-body{padding:clamp(16px,3vw,26px)}
+.bk-nav{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:14px clamp(16px,3vw,26px);background:var(--bg2)}
+/* selectable rows */
+.svc-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;cursor:pointer;transition:.12s;background:var(--bg2)}
+.svc-row:hover{border-color:var(--line2)}
+.svc-row input{display:none}
+.svc-row .cb{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line2);flex:none;display:flex;align-items:center;justify-content:center;color:transparent;font-size:13px}
+.svc-row.on{border-color:var(--acc);background:rgba(245,158,11,.07)}
+.svc-row.on .cb{background:var(--acc);border-color:var(--acc);color:#161006}
+.svc-row .n{flex:1;min-width:0}
+.svc-row .n b{display:block;font-size:14.5px}
+.svc-row .n span{color:var(--dim);font-size:12.5px}
+.svc-row .p{font-weight:700;color:var(--acc2);white-space:nowrap}
+.tot{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--line2);margin-top:14px;padding-top:14px;font-weight:700}
+.tot .t2{color:var(--mut);font-weight:500;font-size:13.5px}
+/* date & slots */
+.drow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.drow>div:first-child{flex:1;min-width:200px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chipbtn{background:var(--bg2);border:1px solid var(--line2);color:var(--mut);border-radius:10px;padding:10px 14px;font-weight:600;font-size:13px}
+.chipbtn:hover,.chipbtn.on{border-color:var(--acc);color:var(--acc2)}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px}
+.slot{position:relative;padding:11px 6px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2);color:var(--text);font-weight:700;font-size:14px;text-align:center;transition:.12s}
+.slot:hover:not(:disabled){border-color:var(--acc)}
+.slot.sel{background:var(--acc);border-color:var(--acc);color:#161006}
+.slot:disabled{opacity:.3;cursor:not-allowed}
+.slot .fr{position:absolute;top:3px;right:6px;font-size:9.5px;color:var(--ok);font-weight:700}
+.slot.sel .fr{color:#161006}
+.msg{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);color:#a9c7f5;border-radius:12px;padding:12px 14px;font-size:13.5px}
+.msg.warn{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:#f3c98b}
+/* form */
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f-grid .full{grid-column:1/-1}
+.lb{display:block;font-size:12.5px;color:var(--mut);font-weight:600;margin-bottom:6px}
+.lb.req::after{content:" *";color:var(--bad)}
+.inp{width:100%;background:var(--bg2);border:1px solid var(--line2);color:var(--text);padding:11px 13px;border-radius:11px;outline:none;transition:.15s}
+.inp:focus{border-color:var(--acc)}
+textarea.inp{resize:vertical;min-height:74px}
+select.inp-sm{width:auto;padding:7px 10px;font-size:13px;border-radius:9px}
+.sumbox{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.sumbox .row{display:flex;justify-content:space-between;gap:14px;padding:5px 0;font-size:14px}
+.sumbox .row span{color:var(--mut)}
+.sumbox .row b{text-align:right}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--mut);margin-top:14px}
+.consent input{margin-top:3px;accent-color:var(--acc)}
+/* success */
+.okwrap{text-align:center;padding:8px 0}
+.okico{width:64px;height:64px;border-radius:50%;background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.4);color:var(--ok);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 16px}
+.okcode{font-size:24px;font-weight:800;letter-spacing:2px;color:var(--acc2)}
+/* my bookings */
+.my-item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.my-item .l b{display:block}
+.my-item .l span{color:var(--mut);font-size:13px}
+.my-item.cancelled{opacity:.55}
+/* badges */
+.st{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.st-new{background:rgba(245,158,11,.14);color:var(--acc2)}
+.st-conf{background:rgba(96,165,250,.14);color:#9ec5fa}
+.st-done{background:rgba(52,211,153,.14);color:var(--ok)}
+.st-cancel{background:rgba(148,163,184,.14);color:#a9b4c6}
+/* faq */
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:13px;margin-bottom:10px;overflow:hidden}
+.faq summary{padding:16px 18px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--acc);font-size:19px}
+.faq details[open] summary::after{content:"–"}
+.faq .faq-b{padding:0 18px 16px;color:var(--mut);font-size:14px}
+/* footer */
+footer{border-top:1px solid var(--line);background:var(--bg2)}
+.ft-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px;padding:44px 0 34px}
+.ft-grid h4{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+.ft-grid p,.ft-grid li{color:var(--mut);font-size:14px}
+.ft-grid ul{list-style:none;margin:0;padding:0}
+.ft-grid li{padding:4px 0}
+.ft-bot{border-top:1px solid var(--line);padding:16px 0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--dim);font-size:13px}
+/* toasts */
+#toasts{position:fixed;right:16px;bottom:16px;z-index:200;display:flex;flex-direction:column;gap:10px;max-width:min(360px,calc(100vw - 32px))}
+.toast{background:var(--card2);border:1px solid var(--line2);border-left:3px solid var(--info);border-radius:12px;padding:12px 16px;font-size:14px;box-shadow:var(--sh);animation:tin .25s}
+.toast.ok{border-left-color:var(--ok)}
+.toast.err{border-left-color:var(--bad)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(4,6,10,.66);z-index:150;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto}
+.modal.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--line2);border-radius:16px;width:min(600px,100%);box-shadow:var(--sh);animation:tin .2s}
+.m-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.m-head h3{margin:0;font-size:17px}
+.m-x{background:none;border:none;color:var(--mut);font-size:24px;line-height:1;padding:2px 8px}
+.m-x:hover{color:var(--text)}
+.m-body{padding:20px}
+.m-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--bg2);border-radius:0 0 16px 16px}
+/* admin */
+.a-head .hdr-in{height:58px}
+.a-tabs{display:flex;gap:6px;overflow-x:auto;padding:14px 0 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.a-tabs::-webkit-scrollbar{display:none}
+.a-tab{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:11px;padding:9px 16px;font-weight:700;font-size:13.5px;white-space:nowrap}
+.a-tab.on{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.4);color:var(--acc2)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.stat span{color:var(--dim);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.stat b{display:block;font-size:26px;margin-top:6px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.panel h3{font-size:15.5px;margin:0 0 14px}
+.panel.danger{border-color:rgba(248,113,113,.35)}
+.a-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start;margin-top:14px}
+.trow{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #1c2330}
+.trow:last-child{border-bottom:none}
+.chart{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:8px}
+.chart .cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;min-width:0}
+.chart .bar{width:100%;max-width:44px;background:linear-gradient(180deg,var(--acc),var(--acc-d));border-radius:6px 6px 2px 2px;min-height:3px}
+.chart .cl{font-size:11px;color:var(--dim);white-space:nowrap}
+.chart .cv{font-size:12px;color:var(--mut);font-weight:700;min-height:15px}
+.tb{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tb .inp{width:auto}
+.tb .grow{flex:1;min-width:150px}
+.tb .spacer{flex:1}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.tbl{width:100%;border-collapse:collapse;min-width:820px}
+.tbl th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:11px 12px;border-bottom:1px solid #1c2330;font-size:13.5px;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .sub{color:var(--dim);font-size:12px}
+.empty{padding:30px;text-align:center;color:var(--dim)}
+.wdays{display:flex;flex-wrap:wrap;gap:8px}
+.wday{position:relative}
+.wday input{position:absolute;opacity:0;pointer-events:none}
+.wday span{display:inline-block;padding:8px 13px;border:1px solid var(--line2);border-radius:10px;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer;user-select:none}
+.wday input:checked+span{border-color:var(--acc);color:var(--acc2);background:rgba(245,158,11,.08)}
+.blist{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.bitem{display:inline-flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:7px 10px;font-size:13px}
+.bitem button{background:none;border:none;color:var(--bad);font-weight:800;padding:0 2px;line-height:1}
+.hint{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px}
+.err{color:var(--bad);font-size:13px;margin-top:10px}
+/* login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:min(420px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px;box-shadow:var(--sh)}
+.login-card .logo{justify-content:center;margin-bottom:6px}
+/* мастер (сотрудник): бейдж */
+.emp-b{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ec,#60a5fa);color:var(--ec,#60a5fa);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.emp-b i{width:7px;height:7px;border-radius:50%;background:var(--ec,#60a5fa);flex:none}
+/* панель сотрудника */
+.st-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.st-head h2{margin:0;font-size:clamp(20px,4.5vw,26px);font-weight:800}
+.st-shift{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;border:1px solid var(--line2);background:var(--card);color:var(--mut)}
+.st-shift.on{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--ok)}
+.st-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.st-stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.st-stat span{color:var(--dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block}
+.st-stat b{display:block;font-size:clamp(16px,4.5vw,22px);margin-top:5px;color:var(--acc2);white-space:nowrap}
+.st-stat i{display:block;font-style:normal;color:var(--dim);font-size:11.5px;margin-top:3px}
+.st-filters{margin-bottom:2px}
+.st-filters .chipbtn{padding:9px 13px}
+.st-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.st-card.cancelled{opacity:.55}
+.st-card .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.st-card .row1 .dt{font-weight:800;font-size:15px}
+.st-card .row1 .dt small{display:block;font-weight:600;color:var(--dim);font-size:12px}
+.st-card .cl{color:var(--mut);font-size:13.5px;margin-top:6px}
+.st-card .sv{color:var(--dim);font-size:12.5px;margin-top:3px}
+.st-card .money{font-weight:800;color:var(--acc2);white-space:nowrap}
+.st-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.st-acts .btn{flex:1 1 130px;min-height:42px}
+/* вход сотрудника */
+.emp-chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px}
+.emp-chip{flex:1 1 40%;background:var(--bg2);border:1.5px solid var(--line2);border-radius:12px;padding:13px 10px;font-weight:700;color:var(--mut);text-align:center;font-size:14.5px}
+.emp-chip small{display:block;font-weight:600;font-size:11px;color:var(--dim);margin-top:2px}
+.emp-chip.on{border-color:var(--acc);color:var(--acc2);background:rgba(245,158,11,.08)}
+.mut-sm{font-size:12.5px;color:var(--mut);margin:0 0 10px}
+.st-emp-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #1c2330;flex-wrap:wrap}
+.st-emp-row:last-child{border-bottom:none}
+.st-emp-row .nm{flex:1;min-width:140px;font-weight:700}
+.st-emp-row .pin{color:var(--dim);font-size:12.5px}
+/* responsive */
+@media(max-width:860px){
+  .nav{display:none}
+  .burger{display:inline-flex}
+  .ft-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:760px){
+  .hide-m{display:none}
+  .tbl{min-width:600px}
+  .tbl td,.tbl th{padding:10px 10px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .stat b{font-size:21px}
+  .a-tabs{padding-top:10px}
+  .a-tab{padding:9px 13px}
+  .tb .inp{min-height:42px}
+}
+@media(max-width:640px){
+  .ring{display:none}
+  .ft-grid{grid-template-columns:1fr;gap:20px;padding:32px 0 24px}
+  .a-grid{grid-template-columns:1fr}
+  .hero-stats{gap:18px}
+  .bk-nav{padding:12px 14px}
+  .bk-nav .btn{flex:1}
+  .st-stats{gap:8px}
+  .st-stat{padding:11px 12px}
+}
+@media(max-width:560px){
+  .f-grid{grid-template-columns:1fr}
+  .prog-i{padding:12px 8px;gap:7px}
+  .prog-i span{font-size:11.5px}
+  .tbl{min-width:540px}
+  .inp,select.inp{font-size:16px}
+  .hdr-in{gap:10px;height:56px}
+  .logo{font-size:16px}
+  .logo small{display:none}
+  #adminBtn{padding:7px 10px}
+  /* модалки во весь экран */
+  .modal{padding:0}
+  .modal-box{width:100%;min-height:100dvh;border-radius:0;border-left:none;border-right:none;animation:tin .2s}
+  .m-head{position:sticky;top:0;z-index:2;background:var(--card)}
+  .m-foot{position:sticky;bottom:0;border-radius:0;z-index:2}
+  .m-body{padding:16px}
+  .st-acts .btn{flex:1 1 100%}
+  .slot{padding:13px 6px;font-size:15px}
+  .btn{padding:12px 16px}
+  .btn-s{padding:9px 12px;font-size:13px}
+  .login-card{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+<div id="site">
+<header class="hdr" id="siteHead">
+  <div class="container hdr-in">
+    <a class="logo" href="#top" id="brandName">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="1.6"/></svg>
+      <span><span class="js-co">ШинаСервис</span><small>шиномонтаж · онлайн-запись</small></span>
+    </a>
+    <nav class="nav">
+      <a href="#services">Услуги</a>
+      <a href="#booking">Запись</a>
+      <a href="#my">Мои записи</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+    <button class="btn btn-o btn-s" id="adminBtn">Админка</button>
+    <button class="burger" id="burgerBtn" aria-label="Меню">☰</button>
+  </div>
+  <nav class="mnav" id="mnav">
+    <a href="#services">Услуги</a>
+    <a href="#booking">Запись</a>
+    <a href="#my">Мои записи</a>
+    <a href="#faq">Вопросы</a>
+    <a href="#contacts">Контакты</a>
+    <a href="#" id="mStaffLink">🔧 Панель сотрудника</a>
+  </nav>
+</header>
+
+<main>
+<section class="hero" id="top">
+  <div class="ring r1"></div><div class="ring r2"></div>
+  <div class="container hero-in">
+    <div class="kick">🛞 Онлайн-запись · без очередей</div>
+    <h1>Запись на <em>шиномонтаж</em><br>за одну минуту</h1>
+    <p class="hero-sub">Сезонная смена шин, балансировка и ремонт колёс по предварительной записи. Выберите услуги и удобное время — и приезжайте к назначенному часу, без ожидания в очереди.</p>
+    <div class="hero-cta">
+      <a class="btn btn-p" href="#booking">Записаться</a>
+      <a class="btn btn-o" href="#services">Услуги и цены</a>
+    </div>
+    <div class="hero-chips">
+      <div class="hchip">🕐 <b class="js-hours">Пн–Сб: 09:00–20:00</b></div>
+      <div class="hchip">📍 <b class="js-addr">г. Москва, ул. Моторная, 12с3</b></div>
+      <div class="hchip">📞 <b><a class="js-phone" href="#">+7 (495) 120-45-67</a></b></div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><b>12</b><span>лет работы</span></div>
+      <div class="hstat"><b>40 000+</b><span>обслуженных авто</span></div>
+      <div class="hstat"><b>4</b><span>поста шиномонтажа</span></div>
+      <div class="hstat"><b>4.9 ★</b><span>рейтинг клиентов</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="services">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Услуги и <em>цены</em></h2>
+      <p class="sec-d">Стоимость и время указаны для легкового автомобиля. Нажмите «Выбрать» — услуга сразу добавится в форму записи.</p>
+    </div>
+    <div class="svc-grid" id="svcGrid"></div>
+  </div>
+</section>
+
+<section class="sec alt" id="how">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Как это <em>работает</em></h2>
+      <p class="sec-d">Весь визит занимает от 20 минут до полутора часов — в зависимости от выбранных услуг.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card"><div class="step-n">1</div><h3>Заявка онлайн</h3><p>Выберите услуги, дату и свободное время прямо на сайте — это займёт около минуты.</p></div>
+      <div class="step-card"><div class="step-n">2</div><h3>Подтверждение</h3><p>Администратор перезвонит по указанному телефону и подтвердит запись.</p></div>
+      <div class="step-card"><div class="step-n">3</div><h3>Работы</h3><p>Приезжайте к назначенному времени. Мастера сразу принимают авто на пост.</p></div>
+      <div class="step-card"><div class="step-n">4</div><h3>Готово</h3><p>Оплата после приёмки работ: наличными или картой. Гарантия на все виды работ.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="booking">
+  <div class="container">
+    <div class="sec-head" style="text-align:center;margin-inline:auto">
+      <h2 class="sec-t">Онлайн-<em>запись</em></h2>
+      <p class="sec-d">Три простых шага: услуги → дата и время → контакты.</p>
+    </div>
+    <div class="bk-wrap">
+      <div class="bk-card">
+        <div class="prog" id="prog">
+          <div class="prog-i" id="pi1"><b>1</b><span>Услуги</span></div>
+          <div class="prog-i" id="pi2"><b>2</b><span>Дата и время</span></div>
+          <div class="prog-i" id="pi3"><b>3</b><span>Контакты</span></div>
+        </div>
+        <div class="bk-body" id="bkPane"></div>
+        <div class="bk-nav" id="bkNav">
+          <button class="btn btn-o" id="bkBack">← Назад</button>
+          <button class="btn btn-p" id="bkNext">Далее →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec alt" id="my">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Мои <em>записи</em></h2>
+      <p class="sec-d">Введите телефон, который указывали при записи, — покажем все ваши визиты. Будущие записи можно отменить.</p>
+    </div>
+    <div class="drow" style="max-width:560px">
+      <div style="flex:1;min-width:200px"><label class="lb req">Телефон записи</label><input class="inp" id="myPhone" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>
+      <button class="btn btn-p" id="myFind">Найти</button>
+    </div>
+    <div id="myList" style="max-width:640px"></div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Частые <em>вопросы</em></h2>
+    </div>
+    <div class="faq" style="max-width:760px">
+      <details><summary>Нужно ли записываться заранее?</summary><div class="faq-b">Да, мы работаем по записи — так вы не ждёте в очереди. Запись на ближайший день возможна в день обращения, если есть свободные слоты. В высокий сезон (октябрь–ноябрь и март–апрель) рекомендуем записываться за 2–3 дня.</div></details>
+      <details><summary>Можно ли отменить или перенести запись?</summary><div class="faq-b">Да. Отменить запись можно самостоятельно в разделе «Мои записи» по номеру телефона. Для переноса позвоните нам по телефону <b class="js-phone"></b> — администратор подберёт новое время.</div></details>
+      <details><summary>Сколько времени занимает смена шин?</summary><div class="faq-b">Комплект без балансировки — около 1 часа, с балансировкой — до 1,5 часов. Смена колёс «на дисках» — около 40 минут. Время рассчитано для легкового автомобиля; внедорожники и R19+ могут занять чуть больше.</div></details>
+      <details><summary>Что делать, если я опаздываю?</summary><div class="faq-b">Мы держим слот за вами 15 минут. Если задерживаетесь сильнее — позвоните нам: постараемся сдвинуть запись или предложим ближайшее свободное время.</div></details>
+      <details><summary>Работаете ли вы с низким профилем и R18+?</summary><div class="faq-b">Да. У нас есть оборудование для низкого профиля и RunFlat, бесшпилечные сборочные головки и стенды балансировки. Уточните тип шин в комментарии к записи — мы подготовим нужный инструмент заранее.</div></details>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer id="contacts">
+  <div class="container">
+    <div class="ft-grid">
+      <div>
+        <div class="logo" style="margin-bottom:12px">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span><span class="js-co">ШинаСервис</span><small>шиномонтаж · онлайн-запись</small></span>
+        </div>
+        <p>Автосервис полного цикла: шиномонтаж, балансировка, ремонт колёс и сезонное хранение. Работаем точно по записи — без очередей и ожидания.</p>
+      </div>
+      <div>
+        <h4>Контакты</h4>
+        <ul>
+          <li>📞 <a class="js-phone" href="#">+7 (495) 120-45-67</a></li>
+          <li>📍 <span class="js-addr">г. Москва, ул. Моторная, 12с3</span></li>
+          <li>🕐 <span class="js-hours">Пн–Сб: 09:00–20:00</span></li>
+          <li>✉️ info@shinaservice.ru</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Запись</h4>
+        <p>Выберите услуги и время онлайн — это быстрее звонка.</p>
+        <a class="btn btn-p btn-s" href="#booking">Записаться онлайн</a>
+        <p style="margin:16px 0 0"><a href="#" id="staffLink">Панель сотрудника (по ПИН-коду) →</a></p>
+        <p style="margin:8px 0 0"><a href="#" id="adminBtn2">Вход для администратора →</a></p>
+      </div>
+    </div>
+    <div class="ft-bot">
+      <div>© <span id="ftYear">2026</span> <span class="js-co">ШинаСервис</span>. Все права защищены.</div>
+      <div>Демо-версия: данные хранятся локально в вашем браузере.</div>
+    </div>
+  </div>
+</footer>
+</div>
+
+<div id="loginView" hidden>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Админ-панель</span>
+      </div>
+      <p style="text-align:center;color:var(--mut);font-size:13.5px">Вход для администраторов <span class="js-co">ШинаСервис</span></p>
+      <label class="lb req">Пароль</label>
+      <input type="password" class="inp" id="loginPass" placeholder="Введите пароль">
+      <div class="err" id="loginErr">Неверный пароль. Попробуйте ещё раз.</div>
+      <button class="btn btn-p" id="loginBtn" style="width:100%;margin-top:14px">Войти</button>
+      <button class="btn btn-o" id="loginBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
+      <p class="hint">Сотрудник? <a href="#" id="loginStaff">Войти по ПИН-коду</a></p>
+      <div class="hint">Демо-пароль по умолчанию: admin123 — смените его в «Настройках» после входа.</div>
+    </div>
+  </div>
+</div>
+
+<div id="staffLogin" hidden>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Панель сотрудника</span>
+      </div>
+      <p style="text-align:center;color:var(--mut);font-size:13.5px">Выберите себя и введите ПИН-код</p>
+      <div class="emp-chips" id="stEmpChips"></div>
+      <label class="lb req">ПИН-код</label>
+      <input type="password" class="inp" id="stPin" inputmode="numeric" maxlength="8" placeholder="••••" style="text-align:center;letter-spacing:8px;font-size:20px">
+      <div class="err" id="stErr">Неверный ПИН-код. Попробуйте ещё раз.</div>
+      <button class="btn btn-p" id="stLoginBtn" style="width:100%;margin-top:14px">Войти</button>
+      <button class="btn btn-o" id="stBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
+      <div class="hint">ПИН-коды выдаёт администратор: Настройки → «Сотрудники и смены».</div>
+    </div>
+  </div>
+</div>
+
+<div id="staff" hidden>
+  <header class="hdr a-head">
+    <div class="container hdr-in">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span><span class="js-co">ШинаСервис</span><small>панель сотрудника</small></span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-o btn-s" id="stSite">На сайт</button>
+        <button class="btn btn-d btn-s" id="stLogout">Выйти</button>
+      </div>
+    </div>
+  </header>
+  <div class="container" style="padding-top:16px;padding-bottom:44px">
+    <div class="st-head" id="stHead"></div>
+    <div class="st-stats" id="stStats"></div>
+    <div class="chips st-filters" id="stFilters"></div>
+    <div id="stList" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="admin" hidden>
+  <header class="hdr a-head">
+    <div class="container hdr-in">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span><span class="js-co">ШинаСервис</span><small>админ-панель</small></span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-o btn-s" id="aSite">На сайт</button>
+        <button class="btn btn-d btn-s" id="aLogout">Выйти</button>
+      </div>
+    </div>
+  </header>
+  <div class="container">
+    <nav class="a-tabs" id="aTabs">
+      <button class="a-tab on" data-tab="dash">📊 Панель</button>
+      <button class="a-tab" data-tab="bookings">📋 Записи</button>
+      <button class="a-tab" data-tab="services">🛞 Услуги</button>
+      <button class="a-tab" data-tab="schedule">🕐 Расписание</button>
+      <button class="a-tab" data-tab="settings">⚙️ Настройки</button>
+    </nav>
+
+    <section id="a-dash" class="a-pane" style="padding-bottom:40px">
+      <div class="stat-grid">
+        <div class="stat"><span>Записей на сегодня</span><b id="statToday">0</b></div>
+        <div class="stat"><span>Новых (не подтверждено)</span><b id="statNew" style="color:var(--acc2)">0</b></div>
+        <div class="stat"><span>На 7 дней вперёд</span><b id="statWeek">0</b></div>
+        <div class="stat"><span>Выручка за месяц</span><b id="statRev" style="color:var(--ok)">0 ₽</b></div>
+      </div>
+      <div class="a-grid">
+        <div class="panel">
+          <h3>Загрузка за последние 7 дней</h3>
+          <div class="chart" id="chart"></div>
+        </div>
+        <div class="panel">
+          <h3>Записи на сегодня</h3>
+          <div id="todayList"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>Новые записи — требуют подтверждения</h3>
+        <div id="newList"></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>Смены мастеров</h3>
+        <div id="shiftInfo"></div>
+      </div>
+    </section>
+
+    <section id="a-bookings" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="tb">
+        <select class="inp inp-sm" id="fStatus">
+          <option value="all">Все статусы</option>
+          <option value="new">Новые</option>
+          <option value="confirmed">Подтверждённые</option>
+          <option value="done">Выполненные</option>
+          <option value="cancelled">Отменённые</option>
+        </select>
+        <select class="inp inp-sm" id="fRange">
+          <option value="all">За всё время</option>
+          <option value="today">Сегодня</option>
+          <option value="tomorrow">Завтра</option>
+          <option value="week">Ближайшие 7 дней</option>
+          <option value="future">Будущие</option>
+          <option value="past">Прошлые</option>
+        </select>
+        <input class="inp inp-sm grow" id="fQ" placeholder="Поиск: имя, телефон, код, авто…">
+        <select class="inp inp-sm" id="fEmp"><option value="all">Все мастера</option></select>
+        <div class="spacer"></div>
+        <button class="btn btn-o btn-s" id="btnCsv">⬇ CSV</button>
+        <button class="btn btn-p btn-s" id="btnAddBook">+ Записать клиента</button>
+      </div>
+      <div style="color:var(--dim);font-size:12.5px;margin-bottom:8px" id="bkCount"></div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Код</th><th>Дата</th><th>Клиент</th><th class="hide-m">Авто</th><th class="hide-m">Услуги</th><th class="hide-m">Мастер</th><th>Сумма</th><th>Статус</th><th></th></tr></thead>
+          <tbody id="bkBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="a-services" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="tb">
+        <div class="spacer"></div>
+        <button class="btn btn-p btn-s" id="btnAddSvc">+ Добавить услугу</button>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl">
+          <thead><tr><th>Услуга</th><th>Категория</th><th>Цена</th><th>Время</th><th>Показ</th><th></th></tr></thead>
+          <tbody id="svcBody"></tbody>
+        </table>
+      </div>
+      <p style="color:var(--dim);font-size:12.5px;margin-top:10px">Скрытая услуга перестаёт показываться клиентам, но остаётся в уже созданных записях.</p>
+    </section>
+
+    <section id="a-schedule" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="a-grid">
+        <div class="panel">
+          <h3>Рабочее время</h3>
+          <label class="lb">Рабочие дни</label>
+          <div class="wdays" id="wdaysBox"></div>
+          <div class="f-grid" style="margin-top:14px">
+            <div><label class="lb">Начало дня</label><input type="time" class="inp" id="wsStart"></div>
+            <div><label class="lb">Конец дня</label><input type="time" class="inp" id="wsEnd"></div>
+            <div><label class="lb">Интервал слотов</label>
+              <select class="inp" id="wsInt">
+                <option value="30">30 минут</option>
+                <option value="45">45 минут</option>
+                <option value="60">1 час</option>
+                <option value="90">1,5 часа</option>
+              </select>
+            </div>
+            <div><label class="lb">Постов на один слот</label>
+              <select class="inp" id="wsPosts">
+                <option value="1">1 авто</option>
+                <option value="2">2 авто</option>
+                <option value="3">3 авто</option>
+                <option value="4">4 авто</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-p" id="wsSave" style="margin-top:16px">Сохранить расписание</button>
+        </div>
+        <div class="panel">
+          <h3>Нерабочие дни (праздники)</h3>
+          <p style="color:var(--mut);font-size:13.5px">В эти дни запись будет закрыта независимо от графика.</p>
+          <div class="drow">
+            <div style="flex:1;min-width:170px"><input type="date" class="inp" id="blDate"></div>
+            <button class="btn btn-o" id="blAdd">+ Добавить</button>
+          </div>
+          <div class="blist" id="blList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="a-settings" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="a-grid">
+        <div>
+          <div class="panel">
+            <h3>Данные автосервиса</h3>
+            <div class="f-grid">
+              <div class="full"><label class="lb req">Название</label><input class="inp" id="stName"></div>
+              <div><label class="lb req">Телефон</label><input class="inp" id="stPhone"></div>
+              <div><label class="lb req">Адрес</label><input class="inp" id="stAddr"></div>
+            </div>
+            <button class="btn btn-p" id="stSave" style="margin-top:16px">Сохранить</button>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <h3>Сотрудники и смены</h3>
+            <div id="empList"></div>
+            <button class="btn btn-o btn-s" id="btnAddEmp" style="margin-top:12px">+ Добавить сотрудника</button>
+            <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">
+              <h3 style="margin-bottom:8px">График смен</h3>
+              <p class="mut-sm">Активные сотрудники чередуются через день, начиная с даты старта: в первый день работает выбранный ниже сотрудник. Деактивированный сотрудник пропадает из ротации, его записи остаются.</p>
+              <div class="f-grid">
+                <div><label class="lb">Дата старта графика</label><input type="date" class="inp" id="shStart"></div>
+                <div><label class="lb">Работает в день старта</label><select class="inp" id="shFirst"></select></div>
+              </div>
+              <div class="msg" id="shPreview" style="margin-top:12px"></div>
+              <button class="btn btn-p btn-s" id="shSave" style="margin-top:12px">Сохранить график</button>
+            </div>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <h3>Данные (резервная копия)</h3>
+            <p style="color:var(--mut);font-size:13.5px">Все записи хранятся в браузере (localStorage). Делайте резервную копию JSON и переносите её на другое устройство.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <button class="btn btn-o btn-s" id="btnExpJson">⬇ Экспорт JSON</button>
+              <label class="btn btn-o btn-s" style="cursor:pointer">⬆ Импорт JSON<input type="file" id="impFile" accept=".json,application/json" hidden></label>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h3>Безопасность</h3>
+            <div class="f-grid">
+              <div class="full"><label class="lb req">Текущий пароль</label><input type="password" class="inp" id="pwCur"></div>
+              <div><label class="lb req">Новый пароль</label><input type="password" class="inp" id="pwNew"></div>
+              <div><label class="lb req">Повторите новый</label><input type="password" class="inp" id="pwNew2"></div>
+            </div>
+            <button class="btn btn-p" id="pwSave" style="margin-top:16px">Сменить пароль</button>
+          </div>
+          <div class="panel danger" style="margin-top:14px">
+            <h3 style="color:var(--bad)">Сброс данных</h3>
+            <p style="color:var(--mut);font-size:13.5px">Полностью удалит все записи, услуги и настройки и вернёт демо-состояние. Действие необратимо.</p>
+            <button class="btn btn-d" id="btnReset">Сбросить всё</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div class="modal" id="modal"><div class="modal-box" id="modalBox"></div></div>
+<noscript><div style="padding:20px;text-align:center">Для работы записи включите JavaScript.</div></noscript>
+<script>
+'use strict';
+/* Видимая плашка при любой ошибке скрипта (чтобы сбои не были «немыми») */
+window.addEventListener('error',e=>{
+  try{
+    const t=document.createElement('div');
+    t.style.cssText='position:fixed;top:0;left:0;right:0;z-index:300;background:#7f1d1d;color:#fecaca;font:12.5px/1.4 sans-serif;padding:8px 12px';
+    t.textContent='Ошибка скрипта: '+(e.message||'неизвестная')+' — сообщите об этом разработчику';
+    (document.body||document.documentElement).appendChild(t);
+  }catch(_){}
+});
+/* ================= УТИЛИТЫ ================= */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad2=n=>String(n).padStart(2,'0');
+const isoOf=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+const todayISO=()=>isoOf(new Date());
+const addDaysISO=(base,n)=>{const d=new Date(base+'T00:00:00');d.setDate(d.getDate()+n);return isoOf(d);};
+const toMin=t=>{const p=t.split(':');return (+p[0])*60+(+p[1]);};
+const toHHMM=m=>pad2(Math.floor(m/60))+':'+pad2(m%60);
+const fmtMoney=n=>Number(n||0).toLocaleString('ru-RU')+' ₽';
+const WD=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+function weekdayRu(isoStr){return WD[new Date(isoStr+'T00:00:00').getDay()];}
+function fmtDateShort(isoStr){return isoStr.split('-').reverse().join('.');}
+function fmtDateHuman(isoStr){const d=new Date(isoStr+'T00:00:00');return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})+', '+weekdayRu(isoStr);}
+function fmtDT(ts){const d=new Date(ts);return d.toLocaleDateString('ru-RU')+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());}
+
+/* ================= ДАННЫЕ ================= */
+const LS_KEY='shina_db_v1';
+/* Безопасное хранилище: там, где доступ к localStorage/sessionStorage запрещён
+   (например, изолированный предпросмотр), работаем в памяти, а не падаем. */
+function makeSafeStorage(kind){
+  try{
+    const st=window[kind];
+    st.setItem('__sm_probe__','1');
+    st.removeItem('__sm_probe__');
+    return {st,ok:true};
+  }catch(e){
+    const mem=new Map();
+    return {st:{
+      getItem:k=>mem.has(k)?mem.get(k):null,
+      setItem:(k,v)=>{mem.set(k,String(v));},
+      removeItem:k=>{mem.delete(k);}
+    },ok:false};
+  }
+}
+const LS=makeSafeStorage('localStorage');
+const SS=makeSafeStorage('sessionStorage');
+function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=c[Math.floor(Math.random()*c.length)];return 'SM-'+s;}
+function defaultDB(){
+  const S=(name,cat,icon,desc,price,dur)=>({name,cat,icon,desc,price,dur,active:true});
+  const services=[
+    S('Сезонная смена шин (4 колеса)','Шиномонтаж','🛞','Снятие и установка колёс, без балансировки',3200,60),
+    S('Смена шин + балансировка (4 колеса)','Шиномонтаж','⚙️','Комплекс: снятие, замена резины, балансировка',4800,90),
+    S('Замена одной шины','Шиномонтаж','🛞','Быстрая замена одного колеса',800,20),
+    S('Балансировка (4 колеса)','Шиномонтаж','⚙️','Грузики и проверка на стенде',1400,30),
+    S('Ремонт прокола','Ремонт','🔧','Жгут или грибок, проверка герметичности',900,30),
+    S('Ремонт бокового пореза','Ремонт','🔧','Кордовая заплатка, сложный ремонт',2600,60),
+    S('Переобувка «на дисках» (4 колеса)','Шиномонтаж','🛞','Смена колёс в сборе, без разбортировки',2000,40),
+    S('Сезонное хранение шин','Доп. услуги','📦','Тёплый склад, страховка, 6 месяцев',3000,15),
+    S('Утилизация старых шин (4 шт.)','Доп. услуги','♻️','Официальная утилизация',600,10),
+    S('Проверка давления и подкачка','Доп. услуги','🧰','Экспресс-обслуживание',0,10)
+  ].map((s,i)=>Object.assign({id:i+1},s));
+  const settings={companyName:'ШинаСервис',phone:'+7 (495) 120-45-67',address:'г. Москва, ул. Моторная, 12с3',
+    workStart:'09:00',workEnd:'20:00',interval:60,posts:2,workDays:[1,2,3,4,5,6],blockedDates:[],adminPass:'admin123',
+    employees:[
+      {id:1,name:'Сергей',pin:'1111',color:'#60a5fa',active:true},
+      {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
+    ],
+    shiftStart:todayISO(),shiftFirst:1};
+  const t=todayISO();
+  const mk=(day,time,st,name,phone,car,plate,ids,com)=>({
+    code:genCode(),name,phone,car,plate,
+    services:ids.map(i=>{const s=services.find(x=>x.id===i);return{id:s.id,name:s.name,price:s.price};}),
+    date:addDaysISO(t,day),time,status:st,comment:com||'',
+    total:ids.reduce((a,i)=>a+services.find(x=>x.id===i).price,0),
+    createdAt:Date.now()
+  });
+  const bookings=[
+    mk(0,'11:00','confirmed','Иван Петров','+7 (916) 200-11-22','VW Tiguan','А123ВС77',[2],''),
+    mk(0,'14:00','new','Мария Соколова','+7 (903) 555-30-40','Mazda CX-5','В456МК77',[1,4],''),
+    mk(0,'16:00','done','Алексей Морозов','+7 (925) 100-20-30','Kia Rio','Е789КХ77',[3],''),
+    mk(1,'10:00','new','Дмитрий Волков','+7 (926) 777-45-67','Toyota RAV4','К012ОП77',[2,7],'Прошу позвонить перед визитом'),
+    mk(-3,'12:00','done','Ольга Кузнецова','+7 (915) 300-40-50','Hyundai Creta','М345РС77',[2,8],'')
+  ];
+  bookings.forEach(b=>{b.employeeId=shiftEmpFor(b.date,settings).id;b.empAuto=true;});
+  return {settings,services,bookings};
+}
+/* --- сотрудники и смены --- */
+function shiftEmpFor(dateISO,settings){
+  let emps=(settings.employees||[]).filter(e=>e.active);
+  if(!emps.length)return null;
+  const fi=emps.findIndex(e=>e.id===Number(settings.shiftFirst));
+  if(fi>0)emps.unshift(emps.splice(fi,1)[0]);
+  const d1=new Date(settings.shiftStart+'T00:00:00');
+  const d2=new Date(dateISO+'T00:00:00');
+  const diff=Math.round((d2-d1)/86400000);
+  return emps[((diff%emps.length)+emps.length)%emps.length];
+}
+/* миграция старых/импортированных данных: сотрудники, смена, привязка записей */
+function normalizeDB(d){
+  const def=defaultDB();
+  if(!Array.isArray(d.settings.employees)||!d.settings.employees.length)d.settings.employees=def.settings.employees;
+  d.settings.employees=d.settings.employees.map((e,i)=>({
+    id:Number(e.id)||i+1,name:String(e.name||'Сотрудник '+(i+1)),
+    pin:String(e.pin||String(1000+i*1111)),color:e.color||['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa'][i%5],
+    active:e.active!==false}));
+  const ids=d.settings.employees.map(e=>e.id);
+  if(!ids.includes(Number(d.settings.shiftFirst)))d.settings.shiftFirst=d.settings.employees[0].id;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d.settings.shiftStart||''))d.settings.shiftStart=def.settings.shiftStart;
+  d.bookings.forEach(b=>{
+    if(!b.employeeId||!ids.includes(b.employeeId)){
+      const e=shiftEmpFor(b.date,d.settings);
+      b.employeeId=e?e.id:d.settings.employees[0].id;
+    }
+    if(b.empAuto===undefined)b.empAuto=true;
+  });
+  return d;
+}
+let DB;
+function loadDB(){
+  try{
+    const raw=LS.st.getItem(LS_KEY);
+    if(raw){
+      const d=JSON.parse(raw);
+      if(d&&d.settings&&Array.isArray(d.services)&&Array.isArray(d.bookings)){
+        d.settings=Object.assign(defaultDB().settings,d.settings);
+        return normalizeDB(d);
+      }
+    }
+  }catch(e){}
+  const d=defaultDB();
+  try{LS.st.setItem(LS_KEY,JSON.stringify(d));}catch(e){}
+  return d;
+}
+DB=loadDB();
+const save=()=>{try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}};
+const svcById=id=>DB.services.find(s=>s.id===Number(id));
+const activeServices=()=>DB.services.filter(s=>s.active);
+const empById=id=>DB.settings.employees.find(e=>e.id===Number(id));
+const activeEmps=()=>DB.settings.employees.filter(e=>e.active);
+const empOn=dateISO=>shiftEmpFor(dateISO,DB.settings);
+const empBadge=empId=>{const e=empById(empId);return e?'<span class="emp-b" style="--ec:'+e.color+'"><i></i>'+esc(e.name)+'</span>':'';};
+/* выручка и диапазоны */
+const liveDone=b=>b.status==='confirmed'||b.status==='done';
+const revSum=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).reduce((a,b)=>a+(b.total||0),0);
+const cntBook=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).length;
+function weekRange(){const n=new Date();const dow=(n.getDay()+6)%7;const mon=new Date(n.getFullYear(),n.getMonth(),n.getDate()-dow);return{from:isoOf(mon),to:todayISO()};}
+function monthRange(){const t=todayISO();return{from:t.slice(0,8)+'01',to:t};}
+/* свободные слоты при редактировании (исключая саму запись) */
+function freeTimesFor(dateISO,needDur,excludeCode){
+  const s=DB.settings;
+  if(isClosed(dateISO))return [];
+  const end=toMin(s.workEnd);const dur=Math.max(30,needDur||60);
+  const now=new Date();const isToday=dateISO===todayISO();
+  const cutoff=isToday?now.getHours()*60+now.getMinutes()+15:-1;
+  const out=[];
+  for(let m=toMin(s.workStart);m<end;m+=s.interval){
+    const t=toHHMM(m);
+    const used=liveBookings().filter(x=>x.date===dateISO&&x.time===t&&x.code!==excludeCode).length;
+    if((m>cutoff)&&(s.posts-used>0)&&(m+dur<=end))out.push(t);
+  }
+  return out;
+}
+const liveBookings=()=>DB.bookings.filter(b=>b.status!=='cancelled');
+const activeAt=(date,time)=>liveBookings().filter(b=>b.date===date&&b.time===time).length;
+function isClosed(dateISO){
+  const s=DB.settings;
+  const dow=new Date(dateISO+'T00:00:00').getDay();
+  if(!s.workDays.includes(dow))return true;
+  return (s.blockedDates||[]).includes(dateISO);
+}
+function daySlots(dateISO,needDur){
+  const s=DB.settings;
+  if(isClosed(dateISO))return [];
+  const out=[];const end=toMin(s.workEnd);
+  const now=new Date();const isToday=dateISO===todayISO();
+  const cutoff=isToday?now.getHours()*60+now.getMinutes()+15:-1;
+  const dur=Math.max(30,needDur||60);
+  for(let m=toMin(s.workStart);m<end;m+=s.interval){
+    const free=s.posts-activeAt(dateISO,toHHMM(m));
+    const blocked=(m<=cutoff)||(free<=0)||(m+dur>end);
+    out.push({t:toHHMM(m),free,blocked});
+  }
+  return out;
+}
+function slotAvailable(dateISO,time,needDur,excludeCode){
+  const s=DB.settings;
+  if(isClosed(dateISO))return false;
+  const m=toMin(time);const end=toMin(s.workEnd);
+  const dur=Math.max(30,needDur||60);
+  if(m<toMin(s.workStart)||m+dur>end)return false;
+  const now=new Date();
+  if(dateISO===todayISO()&&m<=now.getHours()*60+now.getMinutes()+15)return false;
+  const used=liveBookings().filter(b=>b.date===dateISO&&b.time===time&&b.code!==excludeCode).length;
+  return used<s.posts;
+}
+const ST={new:{t:'Новая',c:'st-new'},confirmed:{t:'Подтверждена',c:'st-conf'},done:{t:'Выполнена',c:'st-done'},cancelled:{t:'Отменена',c:'st-cancel'}};
+const stBadge=st=>{const m=ST[st]||ST.new;return '<span class="st '+m.c+'">'+m.t+'</span>';};
+function hoursText(){
+  const s=DB.settings;const d=Array.from(new Set(s.workDays)).sort((a,b)=>a-b);
+  if(d.length===7)return 'Ежедневно '+s.workStart+'–'+s.workEnd;
+  if(!d.length)return 'График уточняйте по телефону';
+  const n=WD;let parts=[];let start=d[0],prev=d[0];
+  for(let i=1;i<=d.length;i++){
+    if(d[i]===prev+1){prev=d[i];continue;}
+    parts.push(start===prev?n[start]:n[start]+'–'+n[prev]);
+    start=d[i];prev=d[i];
+  }
+  return parts.join(', ')+': '+s.workStart+'–'+s.workEnd;
+}
+
+/* ================= ТОСТЫ И МОДАЛКИ ================= */
+function toast(msg,type){
+  const el=document.createElement('div');
+  el.className='toast '+(type||'ok');
+  el.textContent=msg;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{el.style.transition='.3s';el.style.opacity='0';setTimeout(()=>el.remove(),320);},3400);
+}
+function openModal(html){$('#modalBox').innerHTML=html;$('#modal').classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(){$('#modal').classList.remove('open');$('#modalBox').innerHTML='';document.body.style.overflow='';}
+$('#modal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget||e.target.closest('[data-mx]'))closeModal();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function openConfirm(title,text,okLabel,cb){
+  openModal(
+    '<div class="m-head"><h3>'+esc(title)+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body"><p style="margin:0">'+text+'</p></div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="cfOk">'+esc(okLabel||'Подтвердить')+'</button></div>'
+  );
+  $('#cfOk').onclick=()=>{closeModal();cb();};
+}
+function phoneMask(inp){
+  let d=(inp.value||'').replace(/\D/g,'');
+  if(d&&d[0]==='8')d='7'+d.slice(1);
+  if(d&&d[0]!=='7')d='7'+d;
+  d=d.slice(0,11);
+  let out='';
+  if(d.length){out='+7';
+    if(d.length>1)out+=' ('+d.slice(1,4);
+    if(d.length>=5)out+=') '+d.slice(4,7);
+    if(d.length>=8)out+='-'+d.slice(7,9);
+    if(d.length>=10)out+='-'+d.slice(9,11);
+  }
+  inp.value=out;
+}
+const phoneOk=v=>{const d=(v||'').replace(/\D/g,'');return d.length===11&&d[0]==='7';};
+
+/* ================= ПУБЛИЧНАЯ ЧАСТЬ ================= */
+function applySettings(){
+  const s=DB.settings;
+  $$('.js-co').forEach(e=>e.textContent=s.companyName);
+  $$('.js-addr').forEach(e=>e.textContent=s.address);
+  $$('.js-hours').forEach(e=>e.textContent=hoursText());
+  $$('.js-phone').forEach(e=>{e.textContent=s.phone;e.href='tel:'+s.phone.replace(/[^+\d]/g,'');});
+  document.title=s.companyName+' — онлайн-запись на шиномонтаж';
+}
+function renderServicesGrid(){
+  const list=activeServices();
+  const g=$('#svcGrid');
+  if(!list.length){g.innerHTML='<div class="msg" style="grid-column:1/-1">Услуги временно недоступны — позвоните нам: <a class="js-phone" href="#"></a></div>';applySettings();return;}
+  g.innerHTML=list.map(s=>
+    '<article class="svc-card">'+
+      '<div class="svc-ico">'+(s.icon||'🛞')+'</div>'+
+      '<h3>'+esc(s.name)+'</h3>'+
+      '<p>'+esc(s.desc||'')+'</p>'+
+      '<div class="svc-meta"><div><div class="svc-price">'+(s.price===0?'Бесплатно':fmtMoney(s.price))+'</div><div class="svc-dur">≈ '+s.dur+' мин</div></div>'+
+      '<button class="btn btn-o btn-s" data-choose="'+s.id+'">Выбрать</button></div>'+
+    '</article>').join('');
+}
+
+/* --- мастер записи --- */
+const bk={step:1,services:new Set(),date:'',time:'',name:'',phone:'',car:'',plate:'',comment:'',agree:false};
+let bkDone=false;
+function selList(){return Array.from(bk.services).map(i=>svcById(i)).filter(Boolean);}
+function selCalc(){const l=selList();return{total:l.reduce((a,s)=>a+s.price,0),dur:Math.max(30,l.reduce((a,s)=>a+s.dur,0))};}
+function renderProg(){
+  [1,2,3].forEach(i=>{
+    const el=$('#pi'+i);
+    el.classList.toggle('act',!bkDone&&bk.step===i);
+    el.classList.toggle('done',bkDone||bk.step>i);
+    el.querySelector('b').textContent=(bkDone||bk.step>i)?'✓':i;
+  });
+}
+function totHtml(){const c=selCalc();return '<div class="tot"><div><div>Итого: '+fmtMoney(c.total)+'</div><div class="t2">Время работ: ≈ '+c.dur+' мин</div></div></div>';}
+function step1Html(){
+  const list=activeServices();
+  if(!list.length)return '<div class="msg warn">Услуги временно недоступны. Позвоните нам: <a class="js-phone" href="#"></a></div>';
+  return list.map(s=>
+    '<label class="svc-row '+(bk.services.has(s.id)?'on':'')+'">'+
+      '<input type="checkbox" data-svc="'+s.id+'" '+(bk.services.has(s.id)?'checked':'')+'>'+
+      '<span class="cb">✓</span>'+
+      '<span class="n"><b>'+esc(s.name)+'</b><span>'+esc(s.desc||'')+' · ≈ '+s.dur+' мин</span></span>'+
+      '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span>'+
+    '</label>').join('')+totHtml();
+}
+function step2Html(){
+  return '<div class="drow">'+
+    '<div><label class="lb req">Дата визита</label><input type="date" id="bkDate" class="inp" min="'+todayISO()+'" value="'+bk.date+'"></div>'+
+    '<div class="chips"><button type="button" class="chipbtn" data-qd="0">Сегодня</button><button type="button" class="chipbtn" data-qd="1">Завтра</button></div>'+
+  '</div><div id="slotArea"></div>';
+}
+function step3Html(){
+  const l=selList();const c=selCalc();
+  return '<div class="sumbox">'+
+    '<div class="row"><span>Услуги</span><b>'+esc(l.map(s=>s.name).join(' + '))+'</b></div>'+
+    '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(bk.date)+', '+bk.time+'</b></div>'+
+    '<div class="row"><span>Длительность</span><b>≈ '+c.dur+' мин</b></div>'+
+    '<div class="row"><span>К оплате</span><b style="color:var(--acc2)">'+fmtMoney(c.total)+'</b></div>'+
+  '</div>'+
+  '<div class="f-grid">'+
+    '<div><label class="lb req">Ваше имя</label><input id="bkName" class="inp" placeholder="Иван" value="'+esc(bk.name)+'"></div>'+
+    '<div><label class="lb req">Телефон</label><input id="bkPhone" class="inp" inputmode="tel" placeholder="+7 (___) ___-__-__" value="'+esc(bk.phone)+'"></div>'+
+    '<div><label class="lb">Автомобиль</label><input id="bkCar" class="inp" placeholder="Kia Rio" value="'+esc(bk.car)+'"></div>'+
+    '<div><label class="lb">Госномер</label><input id="bkPlate" class="inp" placeholder="А123ВС77" value="'+esc(bk.plate)+'"></div>'+
+    '<div class="full"><label class="lb">Комментарий</label><textarea id="bkCom" class="inp" placeholder="Например: шины лежат в багажнике">'+esc(bk.comment)+'</textarea></div>'+
+  '</div>'+
+  '<label class="consent"><input type="checkbox" id="bkAgree" '+(bk.agree?'checked':'')+'><span>Согласен(на) на обработку персональных данных и на подтверждение записи по телефону.</span></label>';
+}
+function renderSlots(){
+  const area=$('#slotArea');if(!area)return;
+  if(!bk.date){area.innerHTML='<div class="msg">Выберите дату визита — покажем свободное время.</div>';return;}
+  if(isClosed(bk.date)){area.innerHTML='<div class="msg warn">'+fmtDateHuman(bk.date)+' — нерабочий день. Выберите другую дату или позвоните нам: <a class="js-phone" href="#"></a></div>';applySettings();return;}
+  const c=selCalc();
+  const slots=daySlots(bk.date,c.dur);
+  const freeSlots=slots.filter(s=>!s.blocked);
+  let h='<div class="lb" style="margin-bottom:8px">Свободное время · визит ≈ '+c.dur+' мин</div>';
+  if(!freeSlots.length){
+    h+='<div class="msg warn">На '+fmtDateHuman(bk.date)+' свободных слотов нет. Выберите другую дату или позвоните нам.</div>';
+  }else{
+    h+='<div class="slots">'+slots.map(s=>
+      '<button type="button" class="slot '+(bk.time===s.t?'sel':'')+'" data-t="'+s.t+'" '+(s.blocked?'disabled title="Занято или время прошло"':'')+'>'+s.t+
+      ((!s.blocked&&s.free<DB.settings.posts)?'<span class="fr">'+s.free+'</span>':'')+'</button>').join('')+'</div>';
+  }
+  area.innerHTML=h;
+}
+function renderStep(){
+  renderProg();
+  const p=$('#bkPane');
+  $('#bkBack').style.visibility=bk.step===1?'hidden':'visible';
+  $('#bkNext').textContent=bk.step===3?'Подтвердить запись':'Далее →';
+  if(bk.step===1){
+    p.innerHTML=step1Html();
+    if(bk.step===1&&p.querySelector('.js-phone'))applySettings();
+    p.querySelectorAll('[data-svc]').forEach(ch=>{
+      ch.addEventListener('change',()=>{
+        const id=Number(ch.dataset.svc);
+        if(ch.checked)bk.services.add(id);else bk.services.delete(id);
+        renderStep();
+      });
+    });
+  }else if(bk.step===2){
+    p.innerHTML=step2Html();
+    $('#bkDate').addEventListener('change',e=>{bk.date=e.target.value||'';bk.time='';renderSlots();});
+    p.querySelectorAll('[data-qd]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        bk.date=addDaysISO(todayISO(),Number(btn.dataset.qd));bk.time='';
+        $('#bkDate').value=bk.date;renderSlots();
+      });
+    });
+    renderSlots();
+  }else if(bk.step===3){
+    p.innerHTML=step3Html();
+    $('#bkName').addEventListener('input',e=>bk.name=e.target.value);
+    $('#bkPhone').addEventListener('input',e=>{phoneMask(e.target);bk.phone=e.target.value;});
+    $('#bkCar').addEventListener('input',e=>bk.car=e.target.value);
+    $('#bkPlate').addEventListener('input',e=>bk.plate=e.target.value);
+    $('#bkCom').addEventListener('input',e=>bk.comment=e.target.value);
+    $('#bkAgree').addEventListener('change',e=>bk.agree=e.target.checked);
+  }
+}
+function goNext(){
+  if(bkDone){return;}
+  if(bk.step===1){
+    if(!bk.services.size){toast('Выберите хотя бы одну услугу','err');return;}
+    bk.step=2;renderStep();
+  }else if(bk.step===2){
+    if(!bk.date){toast('Выберите дату визита','err');return;}
+    if(!bk.time){toast('Выберите время визита','err');return;}
+    bk.step=3;renderStep();
+  }else submitBooking();
+}
+function goBack(){if(bkDone)return;if(bk.step>1){bk.step--;renderStep();}}
+$('#bkPane').addEventListener('click',e=>{
+  const b=e.target.closest('.slot:not(:disabled)');
+  if(!b)return;
+  bk.time=b.dataset.t;
+  $$('#bkPane .slot').forEach(x=>x.classList.toggle('sel',x===b));
+});
+$('#bkBack').addEventListener('click',goBack);
+$('#bkNext').addEventListener('click',goNext);
+function submitBooking(){
+  const name=(bk.name||'').trim();
+  if(name.length<2){toast('Укажите имя (минимум 2 буквы)','err');return;}
+  if(!phoneOk(bk.phone)){toast('Укажите телефон в формате +7 XXX XXX-XX-XX','err');return;}
+  if(!bk.agree){toast('Подтвердите согласие на обработку данных','err');return;}
+  const c=selCalc();
+  if(!slotAvailable(bk.date,bk.time,c.dur)){
+    toast('Это время уже занято — выберите другое','err');
+    bk.step=2;bk.time='';renderStep();return;
+  }
+  const l=selList();
+  const emp=empOn(bk.date);
+  const b={code:genCode(),name,phone:bk.phone,car:(bk.car||'').trim(),plate:(bk.plate||'').trim().toUpperCase(),
+    services:l.map(s=>({id:s.id,name:s.name,price:s.price})),
+    date:bk.date,time:bk.time,comment:(bk.comment||'').trim(),
+    total:l.reduce((a,s)=>a+s.price,0),status:'new',createdAt:Date.now(),
+    employeeId:emp?emp.id:null,empAuto:true};
+  DB.bookings.push(b);save();
+  showSuccess(b);
+}
+function showSuccess(b){
+  bkDone=true;renderProg();
+  $('#bkPane').innerHTML=
+    '<div class="okwrap">'+
+      '<div class="okico">✓</div>'+
+      '<h3 style="margin-bottom:2px">Вы записаны!</h3>'+
+      '<div class="okcode">'+b.code+'</div>'+
+      '<p style="color:var(--mut);max-width:440px;margin:10px auto 18px">Администратор перезвонит на '+esc(b.phone)+' для подтверждения. Сохраните код записи — он пригодится в разделе «Мои записи».</p>'+
+      '<div class="sumbox" style="text-align:left;margin-bottom:0">'+
+        '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(b.date)+', '+b.time+'</b></div>'+
+        '<div class="row"><span>Услуги</span><b>'+esc(b.services.map(s=>s.name).join(' + '))+'</b></div>'+
+        (empById(b.employeeId)?'<div class="row"><span>Ваш мастер</span><b>'+esc(empById(b.employeeId).name)+'</b></div>':'')+
+        '<div class="row"><span>Сумма</span><b>'+fmtMoney(b.total)+'</b></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">'+
+        '<button class="btn btn-o" id="okAgain">Записать ещё</button>'+
+        '<button class="btn btn-p" id="okMy">Мои записи</button>'+
+      '</div>'+
+    '</div>';
+  $('#bkNav').style.display='none';
+  $('#okAgain').addEventListener('click',()=>{resetBk();document.getElementById('booking').scrollIntoView();});
+  $('#okMy').addEventListener('click',()=>{$('#myPhone').value=b.phone;findMy();document.getElementById('my').scrollIntoView();});
+}
+function resetBk(){
+  bk.step=1;bk.services=new Set();bk.date='';bk.time='';bk.agree=false;
+  bkDone=false;$('#bkNav').style.display='';
+  renderStep();
+}
+function chooseService(id){
+  bk.services.add(Number(id));
+  bkDone=false;bk.step=1;$('#bkNav').style.display='';
+  renderStep();
+  document.getElementById('booking').scrollIntoView();
+  toast('Услуга добавлена в запись');
+}
+
+/* --- мои записи --- */
+function findMy(){
+  const wrap=$('#myList');
+  const dig=($('#myPhone').value||'').replace(/\D/g,'');
+  if(dig.length!==11||dig[0]!=='7'){wrap.innerHTML='<div class="msg warn" style="max-width:640px">Введите телефон в формате +7 XXX XXX-XX-XX — как при записи.</div>';return;}
+  const items=DB.bookings.filter(b=>b.phone.replace(/\D/g,'')===dig).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  if(!items.length){wrap.innerHTML='<div class="msg">По этому телефону записей не найдено. Проверьте номер или создайте новую запись выше.</div>';return;}
+  const nowM=new Date().getHours()*60+new Date().getMinutes();
+  wrap.innerHTML=items.map(b=>{
+    const future=b.date>todayISO()||(b.date===todayISO()&&toMin(b.time)>nowM);
+    const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
+    return '<div class="my-item '+(b.status==='cancelled'?'cancelled':'')+'">'+
+      '<div class="l"><b>'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time+' · '+b.code+'</b>'+
+      '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span></div>'+
+      '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+
+      (canCancel?'<button class="btn btn-d btn-s" data-cancel="'+b.code+'">Отменить</button>':'')+
+      '</div></div>';
+  }).join('');
+}
+$('#myPhone').addEventListener('input',e=>phoneMask(e.target));
+$('#myPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findMy();}});
+$('#myFind').addEventListener('click',findMy);
+$('#myList').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-cancel]');if(!btn)return;
+  const b=DB.bookings.find(x=>x.code===btn.dataset.cancel);if(!b)return;
+  openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
+    b.status='cancelled';save();findMy();toast('Запись отменена');
+  });
+});
+/* делегирование: выбрать услугу из сетки */
+$('#svcGrid').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-choose]');if(!btn)return;
+  chooseService(btn.dataset.choose);
+});
+</script>
+<script>
+'use strict';
+/* ================= АДМИНКА ================= */
+const A={tab:'dash',f:{status:'all',range:'all',q:'',emp:'all'}};
+const isAdmin=()=>SS.st.getItem('sm_admin')==='1';
+function renderAdmin(){
+  $$('#aTabs .a-tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===A.tab));
+  ['dash','bookings','services','schedule','settings'].forEach(t=>{$('#a-'+t).hidden=t!==A.tab;});
+  if(A.tab==='dash')renderDash();
+  if(A.tab==='bookings')renderBookings();
+  if(A.tab==='services')renderServicesAdmin();
+  if(A.tab==='schedule')renderSchedule();
+  if(A.tab==='settings')renderSettings();
+}
+$('#aTabs').addEventListener('click',e=>{
+  const b=e.target.closest('.a-tab');if(!b)return;
+  A.tab=b.dataset.tab;renderAdmin();
+});
+
+/* --- панель --- */
+function renderDash(){
+  const t=todayISO();
+  const live=liveBookings();
+  const today=live.filter(b=>b.date===t).sort((a,b)=>a.time.localeCompare(b.time));
+  const news=DB.bookings.filter(b=>b.status==='new').sort((a,b)=>b.createdAt-a.createdAt);
+  const week=live.filter(b=>b.date>=t&&b.date<=addDaysISO(t,7));
+  const mp=t.slice(0,7);
+  const rev=live.filter(b=>liveDone(b)&&b.date.slice(0,7)===mp).reduce((a,b)=>a+(b.total||0),0);
+  $('#statToday').textContent=today.length;
+  $('#statNew').textContent=news.length;
+  $('#statWeek').textContent=week.length;
+  $('#statRev').textContent=fmtMoney(rev);
+  const days=[];let max=1;
+  for(let i=6;i>=0;i--){const d=addDaysISO(t,-i);const c=live.filter(b=>b.date===d).length;max=Math.max(max,c);days.push({d,c});}
+  $('#chart').innerHTML=days.map(x=>
+    '<div class="cbar"><div class="cv">'+(x.c||'')+'</div>'+
+    '<div class="bar" style="height:'+Math.round(x.c/max*100)+'%"></div>'+
+    '<div class="cl">'+weekdayRu(x.d)+' '+fmtDateShort(x.d).slice(0,5)+'</div></div>').join('');
+  $('#todayList').innerHTML=today.length?today.map(b=>
+    '<div class="trow"><b style="min-width:50px">'+b.time+'</b>'+
+    '<div style="flex:1;min-width:0"><div>'+esc(b.name)+(b.car?' <span class="sub">· '+esc(b.car)+'</span>':'')+'</div>'+
+    '<div class="sub">'+esc(b.services.map(s=>s.name).join(' + '))+'</div></div>'+
+    stBadge(b.status)+'</div>').join(''):'<div class="empty">На сегодня записей нет</div>';
+  $('#newList').innerHTML=news.length?news.slice(0,6).map(b=>
+    '<div class="trow"><div style="flex:1;min-width:0"><div>'+esc(b.name)+' · '+fmtDateShort(b.date)+' '+b.time+' <span class="sub">· '+b.code+'</span></div>'+
+    '<div class="sub">'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</div></div>'+
+    '<div style="display:flex;gap:6px"><button class="btn btn-ok btn-s" data-ok="'+b.code+'">✓ Подтвердить</button>'+
+    '<button class="btn btn-d btn-s" data-no="'+b.code+'" title="Отменить">✗</button></div></div>').join('')
+    :'<div class="empty">Новых записей нет</div>';
+  const tm=addDaysISO(t,1);
+  const eToday=empOn(t),eTm=empOn(tm);
+  const shRow=(d,e)=>'<div class="trow"><div style="flex:1"><div>'+fmtDateHuman(d)+'</div><div class="sub">смена мастера</div></div>'+
+    (e?empBadge(e.id):'<span class="st st-cancel">нет активных мастеров</span>')+'</div>';
+  $('#shiftInfo').innerHTML=shRow(t,eToday)+shRow(tm,eTm)+
+    '<p class="mut-sm" style="margin-top:10px">Мастера чередуются через день (Настройки → «Сотрудники и смены»). Записи автоматически закрепляются за мастером по дате визита.</p>';
+}
+$('#newList').addEventListener('click',e=>{
+  const ok=e.target.closest('[data-ok]');const no=e.target.closest('[data-no]');
+  const b=DB.bookings.find(x=>x.code===((ok&&ok.dataset.ok)||(no&&no.dataset.no)));
+  if(!b)return;
+  if(ok){b.status='confirmed';save();renderDash();toast('Запись '+b.code+' подтверждена');}
+  if(no){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> будет отменена.','Отменить',()=>{b.status='cancelled';save();renderDash();toast('Запись отменена');});}
+});
+
+/* --- записи --- */
+function filteredBookings(){
+  const f=A.f;const t=todayISO();const tm=addDaysISO(t,1);
+  return DB.bookings.filter(b=>{
+    if(f.status!=='all'&&b.status!==f.status)return false;
+    if(f.emp!=='all'&&String(b.employeeId)!==f.emp)return false;
+    if(f.range==='today'&&b.date!==t)return false;
+    if(f.range==='tomorrow'&&b.date!==tm)return false;
+    if(f.range==='week'&&!(b.date>=t&&b.date<=addDaysISO(t,7)))return false;
+    if(f.range==='future'&&b.date<t)return false;
+    if(f.range==='past'&&b.date>=t)return false;
+    const q=f.q.trim().toLowerCase();
+    if(q&&!(b.name+' '+b.phone+' '+b.code+' '+(b.car||'')+' '+(b.plate||'')).toLowerCase().includes(q))return false;
+    return true;
+  }).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+}
+function renderEmpFilter(){
+  const sel=$('#fEmp');const cur=A.f.emp;
+  sel.innerHTML='<option value="all">Все мастера</option>'+
+    DB.settings.employees.filter(e=>e.active).map(e=>'<option value="'+e.id+'">'+esc(e.name)+'</option>').join('')+
+    (cur!=='all'&&!empById(cur)?'<option value="'+cur+'">удалён</option>':'');
+  sel.value=cur;
+}
+function renderBookings(){
+  renderEmpFilter();
+  const list=filteredBookings();
+  $('#bkCount').textContent='Найдено записей: '+list.length;
+  $('#bkBody').innerHTML=list.length?list.map(b=>
+    '<tr><td><b>'+b.code+'</b><div class="sub">'+fmtDT(b.createdAt)+'</div></td>'+
+    '<td style="white-space:nowrap">'+fmtDateShort(b.date)+'<div class="sub">'+weekdayRu(b.date)+', '+b.time+'</div></td>'+
+    '<td>'+esc(b.name)+'<div class="sub"><a href="tel:'+b.phone.replace(/[^+\d]/g,'')+'">'+esc(b.phone)+'</a></div></td>'+
+    '<td class="hide-m">'+esc(b.car||'—')+(b.plate?'<div class="sub">'+esc(b.plate)+'</div>':'')+'</td>'+
+    '<td class="hide-m">'+esc(b.services.map(s=>s.name).join(', '))+'</td>'+
+    '<td class="hide-m">'+empBadge(b.employeeId)+'</td>'+
+    '<td style="white-space:nowrap">'+fmtMoney(b.total)+'</td>'+
+    '<td><select class="inp inp-sm" data-st="'+b.code+'">'+
+      ['new','confirmed','done','cancelled'].map(x=>'<option value="'+x+'"'+(b.status===x?' selected':'')+'>'+ST[x].t+'</option>').join('')+
+    '</select></td>'+
+    '<td style="white-space:nowrap"><button class="btn btn-o btn-s" data-edit="'+b.code+'" title="Изменить">✎</button> <button class="btn btn-o btn-s" data-view="'+b.code+'" title="Подробнее">👁</button> <button class="btn btn-d btn-s" data-del="'+b.code+'" title="Удалить">🗑</button></td></tr>').join('')
+    :'<tr><td colspan="9" class="empty">Записей не найдено</td></tr>';
+}
+$('#fStatus').addEventListener('change',e=>{A.f.status=e.target.value;renderBookings();});
+$('#fRange').addEventListener('change',e=>{A.f.range=e.target.value;renderBookings();});
+$('#fEmp').addEventListener('change',e=>{A.f.emp=e.target.value;renderBookings();});
+$('#fQ').addEventListener('input',e=>{A.f.q=e.target.value;renderBookings();});
+$('#bkBody').addEventListener('change',e=>{
+  const sel=e.target.closest('[data-st]');if(!sel)return;
+  const b=DB.bookings.find(x=>x.code===sel.dataset.st);if(!b)return;
+  b.status=sel.value;save();
+  toast('Статус '+b.code+': '+ST[b.status].t);
+});
+$('#bkBody').addEventListener('click',e=>{
+  const v=e.target.closest('[data-view]');const d=e.target.closest('[data-del]');const ed=e.target.closest('[data-edit]');
+  if(ed)openBookingEdit(ed.dataset.edit,{staff:false});
+  if(v)openBookingDetails(v.dataset.view);
+  if(d){
+    const b=DB.bookings.find(x=>x.code===d.dataset.del);if(!b)return;
+    openConfirm('Удалить запись?','Запись <b>'+b.code+'</b> ('+esc(b.name)+') будет удалена безвозвратно.','Удалить',()=>{
+      DB.bookings=DB.bookings.filter(x=>x.code!==b.code);save();renderBookings();toast('Запись удалена');
+    });
+  }
+});
+function openBookingDetails(code){
+  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  openModal(
+    '<div class="m-head"><h3>Запись '+b.code+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<div class="sumbox">'+
+        '<div class="row"><span>Статус</span><b>'+stBadge(b.status)+'</b></div>'+
+        '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(b.date)+', '+b.time+'</b></div>'+
+        '<div class="row"><span>Клиент</span><b>'+esc(b.name)+'</b></div>'+
+        '<div class="row"><span>Телефон</span><b><a href="tel:'+b.phone.replace(/[^+\d]/g,'')+'">'+esc(b.phone)+'</a></b></div>'+
+        '<div class="row"><span>Авто</span><b>'+esc([b.car,b.plate].filter(Boolean).join(', ')||'—')+'</b></div>'+
+        '<div class="row"><span>Услуги</span><b>'+esc(b.services.map(s=>s.name).join(' + '))+'</b></div>'+
+        '<div class="row"><span>Мастер</span><b>'+(b.employeeId&&empById(b.employeeId)?empBadge(b.employeeId):'—')+'</b></div>'+
+        '<div class="row"><span>Сумма</span><b>'+fmtMoney(b.total)+'</b></div>'+
+        (b.comment?'<div class="row"><span>Комментарий</span><b>'+esc(b.comment)+'</b></div>':'')+
+        '<div class="row"><span>Создана</span><b>'+fmtDT(b.createdAt)+'</b></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
+        '<button class="btn btn-o btn-s" id="bdEdit">✎ Изменить запись</button>'+
+        ['new','confirmed','done','cancelled'].map(x=>'<button class="btn '+(b.status===x?'btn-p':'btn-o')+' btn-s" data-setst="'+x+'">'+ST[x].t+'</button>').join('')+
+      '</div>'+
+    '</div>');
+  $('#bdEdit').onclick=()=>openBookingEdit(b.code,{staff:false});
+  $$('#modalBox [data-setst]').forEach(btn=>btn.onclick=()=>{
+    b.status=btn.dataset.setst;save();closeModal();renderAdmin();toast('Статус изменён: '+ST[b.status].t);
+  });
+}
+/* --- редактирование записи (админ и сотрудник) --- */
+function openBookingEdit(code,opts){
+  opts=opts||{};
+  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  const list=activeServices();
+  if(!list.length){toast('Сначала добавьте услуги','err');return;}
+  const isStaffView=!!opts.staff;
+  const ebsvc=()=>list.map(s=>'<label class="svc-row"><input type="checkbox" data-ebsvc="'+s.id+'"'+(b.services.some(x=>x.id===s.id)?' checked':'')+'><span class="cb">✓</span>'+
+    '<span class="n"><b>'+esc(s.name)+'</b><span>≈ '+s.dur+' мин</span></span>'+
+    '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span></label>').join('');
+  const emps=DB.settings.employees.filter(e=>e.active);
+  openModal(
+    '<div class="m-head"><h3>Изменить запись '+b.code+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<div class="f-grid">'+
+        '<div><label class="lb req">Дата</label><input type="date" id="ebDate" class="inp" min="'+todayISO()+'" value="'+b.date+'"></div>'+
+        '<div><label class="lb req">Время</label><select id="ebTime" class="inp"></select></div>'+
+        '<div><label class="lb req">Имя</label><input id="ebName" class="inp" value="'+esc(b.name)+'"></div>'+
+        '<div><label class="lb req">Телефон</label><input id="ebPhone" class="inp" inputmode="tel" value="'+esc(b.phone)+'"></div>'+
+        '<div><label class="lb">Авто</label><input id="ebCar" class="inp" value="'+esc(b.car||'')+'"></div>'+
+        '<div><label class="lb">Госномер</label><input id="ebPlate" class="inp" value="'+esc(b.plate||'')+'"></div>'+
+        (isStaffView?'':'<div class="full"><label class="lb">Мастер</label><select id="ebEmp" class="inp">'+
+          '<option value="auto">Авто (по графику смен)</option>'+
+          emps.map(e=>'<option value="'+e.id+'"'+(b.employeeId===e.id?' selected':'')+'>'+esc(e.name)+'</option>').join('')+
+        '</select></div>')+
+        '<div class="full"><label class="lb">Комментарий</label><input id="ebCom" class="inp" value="'+esc(b.comment||'')+'"></div>'+
+      '</div>'+
+      '<label class="lb" style="margin-top:14px">Услуги</label>'+
+      ebsvc()+
+      '<div class="tot"><span class="t2">Итого</span><span id="ebTotal">'+fmtMoney(b.total)+'</span></div>'+
+      '<div class="msg warn" id="ebMsg" style="display:none;margin-top:10px"></div>'+
+    '</div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="ebSave">Сохранить</button></div>');
+  const picks=()=>Array.from($('#modalBox').querySelectorAll('[data-ebsvc]:checked')).map(i=>svcById(i.dataset.ebsvc)).filter(Boolean);
+  const ebDur=()=>Math.max(30,picks().reduce((a,s)=>a+s.dur,0));
+  const updTot=()=>{$('#ebTotal').textContent=fmtMoney(picks().reduce((a,s)=>a+s.price,0));};
+  const loadTimes=()=>{
+    const sel=$('#ebTime');const d=$('#ebDate').value;
+    const free=freeTimesFor(d,ebDur(),b.code);
+    const sameDate=d===b.date;
+    const opts2=sameDate&&!free.includes(b.time)?[b.time].concat(free):free;
+    sel.innerHTML=opts2.length?opts2.map(t=>'<option value="'+t+'"'+(t===b.time&&sameDate?' selected':'')+'>'+t+(t===b.time&&sameDate?' (текущее)':'')+'</option>').join(''):'<option value="">нет свободных слотов</option>';
+    if(sameDate&&opts2.includes(b.time))sel.value=b.time;
+  };
+  $('#modalBox').querySelectorAll('[data-ebsvc]').forEach(ch=>ch.addEventListener('change',()=>{updTot();loadTimes();}));
+  $('#ebDate').addEventListener('change',loadTimes);
+  $('#ebPhone').addEventListener('input',e=>phoneMask(e.target));
+  loadTimes();
+  $('#ebSave').onclick=()=>{
+    const msg=$('#ebMsg');msg.style.display='none';
+    const err=t=>{msg.textContent=t;msg.style.display='block';};
+    const name=$('#ebName').value.trim();
+    const date=$('#ebDate').value;const time=$('#ebTime').value;
+    const pl=picks();
+    if(name.length<2)return err('Укажите имя');
+    if(!phoneOk($('#ebPhone').value))return err('Некорректный телефон');
+    if(!date)return err('Выберите дату');
+    if(!time)return err('Выберите время');
+    if(!pl.length)return err('Выберите хотя бы одну услугу');
+    const slotChanged=date!==b.date||time!==b.time;
+    if(slotChanged&&!slotAvailable(date,time,ebDur(),b.code))return err('Это время уже занято — выберите другое');
+    b.name=name;b.phone=$('#ebPhone').value;b.car=$('#ebCar').value.trim();
+    b.plate=$('#ebPlate').value.trim().toUpperCase();b.comment=$('#ebCom').value.trim();
+    b.services=pl.map(s=>({id:s.id,name:s.name,price:s.price}));
+    b.total=pl.reduce((a,s)=>a+s.price,0);
+    b.date=date;b.time=time;
+    if(!isStaffView&&$('#ebEmp')){
+      const v=$('#ebEmp').value;
+      if(v==='auto'){b.empAuto=true;const e=empOn(date);b.employeeId=e?e.id:null;}
+      else{b.empAuto=false;b.employeeId=Number(v);}
+    }else if(b.empAuto!==false){
+      const e=empOn(date);b.employeeId=e?e.id:null;
+    }
+    save();closeModal();
+    if(isStaffView)renderStaff();else renderAdmin();
+    toast('Запись '+b.code+' обновлена');
+  };
+}
+function openManualBooking(){
+  const list=activeServices();
+  if(!list.length){toast('Сначала добавьте услуги','err');return;}
+  openModal(
+    '<div class="m-head"><h3>Новая запись (вручную)</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<div class="f-grid">'+
+        '<div><label class="lb req">Дата</label><input type="date" id="mbDate" class="inp" min="'+todayISO()+'"></div>'+
+        '<div><label class="lb req">Время</label><select id="mbTime" class="inp"><option value="">— выберите дату —</option></select></div>'+
+        '<div><label class="lb req">Имя</label><input id="mbName" class="inp"></div>'+
+        '<div><label class="lb req">Телефон</label><input id="mbPhone" class="inp" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>'+
+        '<div><label class="lb">Авто</label><input id="mbCar" class="inp"></div>'+
+        '<div><label class="lb">Госномер</label><input id="mbPlate" class="inp"></div>'+
+        '<div class="full"><label class="lb">Комментарий</label><input id="mbCom" class="inp"></div>'+
+        '<div class="full"><label class="lb">Мастер</label><select id="mbEmp" class="inp">'+
+          '<option value="auto">Авто (по графику смен)</option>'+
+          DB.settings.employees.filter(e=>e.active).map(e=>'<option value="'+e.id+'">'+esc(e.name)+'</option>').join('')+
+        '</select></div>'+
+      '</div>'+
+      '<label class="lb" style="margin-top:14px">Услуги</label>'+
+      list.map(s=>'<label class="svc-row"><input type="checkbox" data-mbsvc="'+s.id+'"><span class="cb">✓</span>'+
+        '<span class="n"><b>'+esc(s.name)+'</b><span>≈ '+s.dur+' мин</span></span>'+
+        '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span></label>').join('')+
+      '<div class="tot"><span class="t2">Итого</span><span id="mbTotal">0 ₽</span></div>'+
+      '<div class="msg warn" id="mbMsg" style="display:none;margin-top:10px"></div>'+
+    '</div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="mbSave">Создать запись</button></div>');
+  const picks=()=>Array.from($('#modalBox').querySelectorAll('[data-mbsvc]:checked')).map(i=>svcById(i.dataset.mbsvc)).filter(Boolean);
+  const mbDur=()=>Math.max(30,picks().reduce((a,s)=>a+s.dur,0));
+  const loadMbSlots=()=>{
+    const sel=$('#mbTime');const d=$('#mbDate').value;
+    if(!d){sel.innerHTML='<option value="">— выберите дату —</option>';return;}
+    const slots=daySlots(d,mbDur()).filter(s=>!s.blocked);
+    sel.innerHTML=slots.length?slots.map(s=>'<option value="'+s.t+'">'+s.t+'</option>').join(''):'<option value="">нет свободных слотов</option>';
+  };
+  const updTot=()=>{$('#mbTotal').textContent=fmtMoney(picks().reduce((a,s)=>a+s.price,0));};
+  $('#modalBox').querySelectorAll('[data-mbsvc]').forEach(ch=>ch.addEventListener('change',()=>{updTot();loadMbSlots();}));
+  $('#mbDate').addEventListener('change',loadMbSlots);
+  $('#mbPhone').addEventListener('input',e=>phoneMask(e.target));
+  $('#mbSave').onclick=()=>{
+    const name=$('#mbName').value.trim();
+    const date=$('#mbDate').value;const time=$('#mbTime').value;
+    const list2=picks();
+    const msg=$('#mbMsg');msg.style.display='none';
+    const err=t=>{msg.textContent=t;msg.style.display='block';};
+    if(name.length<2)return err('Укажите имя');
+    if(!phoneOk($('#mbPhone').value))return err('Некорректный телефон');
+    if(!date)return err('Выберите дату');
+    if(!time)return err('Выберите время');
+    if(!list2.length)return err('Выберите хотя бы одну услугу');
+    if(!slotAvailable(date,time,mbDur()))return err('Это время уже занято — обновите слоты');
+    DB.bookings.push({code:genCode(),name,phone:$('#mbPhone').value,car:$('#mbCar').value.trim(),
+      plate:$('#mbPlate').value.trim().toUpperCase(),
+      services:list2.map(s=>({id:s.id,name:s.name,price:s.price})),
+      date,time,comment:$('#mbCom').value.trim(),
+      total:list2.reduce((a,s)=>a+s.price,0),status:'confirmed',createdAt:Date.now(),
+      employeeId:assignEmp($('#mbEmp').value,date),empAuto:$('#mbEmp').value==='auto'});
+    save();closeModal();renderAdmin();toast('Запись создана');
+  };
+}
+function assignEmp(selValue,date){
+  if(selValue!=='auto'){const e=empById(selValue);if(e)return e.id;}
+  const e=empOn(date);return e?e.id:null;
+}
+$('#btnAddBook').addEventListener('click',openManualBooking);
+function exportCsv(){
+  const list=filteredBookings();
+  if(!list.length){toast('Нет записей для экспорта','err');return;}
+  const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const head=['Код','Дата','Время','Статус','Клиент','Телефон','Авто','Госномер','Услуги','Мастер','Сумма','Комментарий','Создана'].map(cell).join(';');
+  const rows=list.map(b=>[b.code,b.date,b.time,ST[b.status]?ST[b.status].t:b.status,b.name,b.phone,b.car,b.plate,
+    b.services.map(s=>s.name).join(', '),(b.employeeId&&empById(b.employeeId)?empById(b.employeeId).name:''),b.total,b.comment,fmtDT(b.createdAt)].map(cell).join(';')).join('\r\n');
+  const blob=new Blob(['\ufeff'+head+'\r\n'+rows],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookings_'+todayISO()+'.csv';
+  document.body.appendChild(a);a.click();a.remove();
+  toast('CSV выгружен: '+list.length+' записей');
+}
+$('#btnCsv').addEventListener('click',exportCsv);
+
+/* --- услуги --- */
+function renderServicesAdmin(){
+  $('#svcBody').innerHTML=DB.services.map(s=>
+    '<tr><td><b>'+(s.icon||'')+' '+esc(s.name)+'</b><div class="sub">'+esc(s.desc||'')+'</div></td>'+
+    '<td>'+esc(s.cat||'—')+'</td>'+
+    '<td style="white-space:nowrap">'+(s.price===0?'Бесплатно':fmtMoney(s.price))+'</td>'+
+    '<td>'+s.dur+' мин</td>'+
+    '<td><label class="wday"><input type="checkbox" data-tgl="'+s.id+'"'+(s.active?' checked':'')+'><span>'+(s.active?'Активна':'Скрыта')+'</span></label></td>'+
+    '<td style="white-space:nowrap"><button class="btn btn-o btn-s" data-edit="'+s.id+'" title="Изменить">✎</button> '+
+    '<button class="btn btn-d btn-s" data-sdel="'+s.id+'" title="Удалить">🗑</button></td></tr>').join('');
+}
+$('#svcBody').addEventListener('change',e=>{
+  const tgl=e.target.closest('[data-tgl]');if(!tgl)return;
+  const s=svcById(tgl.dataset.tgl);if(!s)return;
+  s.active=tgl.checked;save();renderServicesAdmin();renderServicesGrid();
+  toast(s.active?'Услуга видна клиентам':'Услуга скрыта с сайта');
+});
+$('#svcBody').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]');const dl=e.target.closest('[data-sdel]');
+  if(ed)openServiceModal(Number(ed.dataset.edit));
+  if(dl){
+    const s=svcById(Number(dl.dataset.sdel));if(!s)return;
+    openConfirm('Удалить услугу?','«'+esc(s.name)+'» будет удалена. В прошлых записях она сохранится.','Удалить',()=>{
+      DB.services=DB.services.filter(x=>x.id!==s.id);
+      bk.services.delete(s.id);
+      save();renderServicesAdmin();renderServicesGrid();toast('Услуга удалена');
+    });
+  }
+});
+$('#btnAddSvc').addEventListener('click',()=>openServiceModal(null));
+function openServiceModal(id){
+  const s=id?svcById(id):{id:null,name:'',cat:'Шиномонтаж',icon:'🛞',desc:'',price:1000,dur:30,active:true};
+  if(id&&!s){toast('Услуга не найдена','err');return;}
+  openModal(
+    '<div class="m-head"><h3>'+(id?'Редактировать услугу':'Новая услуга')+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body"><div class="f-grid">'+
+      '<div class="full"><label class="lb req">Название</label><input id="svName" class="inp" value="'+esc(s.name)+'"></div>'+
+      '<div><label class="lb">Категория</label><input id="svCat" class="inp" value="'+esc(s.cat||'')+'"></div>'+
+      '<div><label class="lb">Иконка (эмодзи)</label><input id="svIcon" class="inp" value="'+esc(s.icon||'🛞')+'"></div>'+
+      '<div class="full"><label class="lb">Описание</label><input id="svDesc" class="inp" value="'+esc(s.desc||'')+'"></div>'+
+      '<div><label class="lb req">Цена, ₽ (0 = бесплатно)</label><input id="svPrice" class="inp" type="number" min="0" step="50" value="'+s.price+'"></div>'+
+      '<div><label class="lb req">Длительность, мин</label><input id="svDur" class="inp" type="number" min="5" step="5" value="'+s.dur+'"></div>'+
+      '<div class="full"><label class="wday" style="margin-top:6px"><input type="checkbox" id="svAct"'+(s.active?' checked':'')+'><span>Показывать клиентам</span></label></div>'+
+    '</div></div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="svSave">Сохранить</button></div>');
+  $('#svSave').onclick=()=>{
+    const name=$('#svName').value.trim();
+    const price=Math.max(0,Number($('#svPrice').value)||0);
+    const dur=Math.max(5,Number($('#svDur').value)||30);
+    if(name.length<3){toast('Название слишком короткое','err');return;}
+    const data={name,cat:$('#svCat').value.trim()||'Доп. услуги',icon:$('#svIcon').value.trim()||'🛞',
+      desc:$('#svDesc').value.trim(),price,dur,active:$('#svAct').checked};
+    if(id){Object.assign(svcById(id),data);}
+    else{const nid=DB.services.reduce((m,x)=>Math.max(m,x.id),0)+1;DB.services.push(Object.assign({id:nid},data));}
+    save();closeModal();renderServicesAdmin();renderServicesGrid();toast('Услуга сохранена');
+  };
+}
+
+/* --- расписание --- */
+function renderSchedule(){
+  const s=DB.settings;
+  $('#wdaysBox').innerHTML=[1,2,3,4,5,6,0].map(d=>
+    '<label class="wday"><input type="checkbox" class="wday-chk" data-d="'+d+'"'+(s.workDays.includes(d)?' checked':'')+'><span>'+WD[d]+'</span></label>').join('');
+  $('#wsStart').value=s.workStart;
+  $('#wsEnd').value=s.workEnd;
+  $('#wsInt').value=String(s.interval);
+  $('#wsPosts').value=String(s.posts);
+  $('#blDate').value='';
+  renderBlockedList();
+}
+function renderBlockedList(){
+  const arr=(DB.settings.blockedDates||[]).slice().sort();
+  $('#blList').innerHTML=arr.length?arr.map(d=>
+    '<span class="bitem">'+fmtDateShort(d)+' ('+weekdayRu(d)+')<button data-bl="'+d+'" title="Убрать">✕</button></span>').join('')
+    :'<span style="color:var(--dim);font-size:13px">Пока пусто</span>';
+}
+$('#blList').addEventListener('click',e=>{
+  const b=e.target.closest('[data-bl]');if(!b)return;
+  DB.settings.blockedDates=DB.settings.blockedDates.filter(x=>x!==b.dataset.bl);
+  save();renderBlockedList();toast('День снова открыт для записи');
+});
+$('#blAdd').addEventListener('click',()=>{
+  const v=$('#blDate').value;
+  if(!v){toast('Выберите дату','err');return;}
+  if(v<todayISO()){toast('Дата уже в прошлом','err');return;}
+  if(!DB.settings.blockedDates.includes(v))DB.settings.blockedDates.push(v);
+  save();renderBlockedList();$('#blDate').value='';
+  toast('День добавлен в нерабочие');
+});
+$('#wsSave').addEventListener('click',()=>{
+  const st=$('#wsStart').value||'09:00';
+  const en=$('#wsEnd').value||'20:00';
+  if(toMin(st)>=toMin(en)){toast('Начало дня должно быть раньше конца','err');return;}
+  const days=$$('#wdaysBox .wday-chk').filter(c=>c.checked).map(c=>Number(c.dataset.d));
+  if(!days.length){toast('Отметьте хотя бы один рабочий день','err');return;}
+  DB.settings.workStart=st;
+  DB.settings.workEnd=en;
+  DB.settings.interval=Number($('#wsInt').value);
+  DB.settings.posts=Number($('#wsPosts').value);
+  DB.settings.workDays=days;
+  save();applySettings();
+  toast('Расписание сохранено');
+});
+
+/* --- настройки --- */
+function renderSettings(){
+  const s=DB.settings;
+  $('#stName').value=s.companyName;
+  $('#stPhone').value=s.phone;
+  $('#stAddr').value=s.address;
+  $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
+  renderEmployees();
+  renderShiftCfg();
+}
+/* --- сотрудники и смены --- */
+function renderEmployees(){
+  $('#empList').innerHTML=DB.settings.employees.map(e=>
+    '<div class="st-emp-row">'+
+      empBadge(e.id)+
+      '<div class="nm">'+esc(e.name)+(e.active?'':' <span class="st st-cancel">неактивен</span>')+'</div>'+
+      '<span class="pin">ПИН: '+esc(e.pin)+'</span>'+
+      '<label class="wday"><input type="checkbox" data-empact="'+e.id+'"'+(e.active?' checked':'')+'><span>'+(e.active?'В смене':'Вне смены')+'</span></label>'+
+      '<button class="btn btn-o btn-s" data-empedit="'+e.id+'" title="Изменить">✎</button>'+
+    '</div>').join('')||'<span style="color:var(--dim);font-size:13px">Сотрудников нет</span>';
+}
+function renderShiftCfg(){
+  const s=DB.settings;
+  $('#shStart').value=s.shiftStart;
+  $('#shFirst').innerHTML=DB.settings.employees.filter(e=>e.active)
+    .map(e=>'<option value="'+e.id+'"'+(Number(s.shiftFirst)===e.id?' selected':'')+'>'+esc(e.name)+'</option>').join('');
+  const t=todayISO(),tm=addDaysISO(t,1);
+  const eT=shiftEmpFor(t,s),eTm=shiftEmpFor(tm,s);
+  $('#shPreview').innerHTML='Сейчас по графику: <b>'+fmtDateShort(t)+' — '+esc(eT?eT.name:'—')+'</b>, <b>'+fmtDateShort(tm)+' — '+esc(eTm?eTm.name:'—')+'</b>.';
+}
+$('#empList').addEventListener('change',e=>{
+  const c=e.target.closest('[data-empact]');if(!c)return;
+  const emp=empById(c.dataset.empact);if(!emp)return;
+  emp.active=c.checked;
+  if(!activeEmps().length){toast('Нужен хотя бы один активный сотрудник','err');emp.active=true;c.checked=true;return;}
+  save();renderEmployees();renderShiftCfg();
+  toast(emp.name+(emp.active?' вернулся в график смен':' выведен из графика смен'));
+});
+$('#empList').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-empedit]');if(!ed)return;
+  openEmpModal(Number(ed.dataset.empedit));
+});
+$('#btnAddEmp').addEventListener('click',()=>openEmpModal(null));
+function openEmpModal(id){
+  const emp=id?empById(id):null;
+  openModal(
+    '<div class="m-head"><h3>'+(id?'Изменить сотрудника':'Новый сотрудник')+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body"><div class="f-grid">'+
+      '<div class="full"><label class="lb req">Имя</label><input id="emName" class="inp" value="'+(emp?esc(emp.name):'')+'" placeholder="Например: Дмитрий"></div>'+
+      '<div><label class="lb req">ПИН-код для входа</label><input id="emPin" class="inp" inputmode="numeric" maxlength="8" value="'+(emp?esc(emp.pin):'')+'" placeholder="1111"></div>'+
+      '<div><label class="lb">Цвет метки</label><select id="emColor" class="inp">'+
+        ['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa','#f87171'].map(c=>'<option value="'+c+'"'+(emp&&emp.color===c?' selected':'')+'>'+c+'</option>').join('')+
+      '</select></div>'+
+      '<div class="full"><label class="wday" style="margin-top:6px"><input type="checkbox" id="emAct"'+(!emp||emp.active?' checked':'')+'><span>Участвует в графике смен</span></label></div>'+
+    '</div></div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="emSave">Сохранить</button></div>');
+  $('#emSave').onclick=()=>{
+    const name=$('#emName').value.trim();
+    const pin=$('#emPin').value.trim();
+    if(name.length<2){toast('Укажите имя','err');return;}
+    if(!/^\d{4,8}$/.test(pin)){toast('ПИН — от 4 до 8 цифр','err');return;}
+    if(DB.settings.employees.some(x=>x.pin===pin&&(!emp||x.id!==emp.id))){toast('Такой ПИН уже есть у другого сотрудника','err');return;}
+    const data={name,pin,color:$('#emColor').value,active:$('#emAct').checked};
+    if(emp)Object.assign(emp,data);
+    else{
+      const nid=DB.settings.employees.reduce((m,x)=>Math.max(m,x.id),0)+1;
+      DB.settings.employees.push(Object.assign({id:nid},data));
+    }
+    if(!activeEmps().length){toast('Нужен хотя бы один активный сотрудник','err');return;}
+    const ids=DB.settings.employees.map(x=>x.id);
+    if(!ids.includes(Number(DB.settings.shiftFirst)))DB.settings.shiftFirst=DB.settings.employees[0].id;
+    save();closeModal();renderEmployees();renderShiftCfg();renderEmpFilter();
+    toast(emp?'Данные сотрудника сохранены':'Сотрудник добавлен');
+  };
+}
+$('#shSave').addEventListener('click',()=>{
+  const v=$('#shStart').value;
+  const f=$('#shFirst').value;
+  if(!v){toast('Укажите дату старта графика','err');return;}
+  DB.settings.shiftStart=v;
+  if(f)DB.settings.shiftFirst=Number(f);
+  save();renderShiftCfg();
+  toast('График смен сохранён');
+});
+$('#stSave').addEventListener('click',()=>{
+  const name=$('#stName').value.trim();
+  const phone=$('#stPhone').value.trim();
+  const addr=$('#stAddr').value.trim();
+  if(name.length<2){toast('Укажите название','err');return;}
+  if(!phone){toast('Укажите телефон','err');return;}
+  DB.settings.companyName=name;DB.settings.phone=phone;DB.settings.address=addr;
+  save();applySettings();toast('Данные автосервиса сохранены');
+});
+$('#pwSave').addEventListener('click',()=>{
+  const cur=$('#pwCur').value;
+  const n1=$('#pwNew').value;const n2=$('#pwNew2').value;
+  if(cur!==DB.settings.adminPass){toast('Текущий пароль неверен','err');return;}
+  if(n1.length<4){toast('Новый пароль — минимум 4 символа','err');return;}
+  if(n1!==n2){toast('Пароли не совпадают','err');return;}
+  DB.settings.adminPass=n1;save();
+  $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
+  toast('Пароль изменён');
+});
+$('#btnExpJson').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='shinaservice_backup_'+todayISO()+'.json';
+  document.body.appendChild(a);a.click();a.remove();
+  toast('Резервная копия сохранена');
+});
+$('#impFile').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!d.settings||!Array.isArray(d.services)||!Array.isArray(d.bookings))throw new Error('bad');
+      DB=d;DB.settings=Object.assign(defaultDB().settings,d.settings);
+      normalizeDB(DB);
+      save();applySettings();renderServicesGrid();renderAdmin();
+      toast('Данные импортированы');
+    }catch(err){toast('Файл не похож на резервную копию','err');}
+  };
+  r.readAsText(f);
+  e.target.value='';
+});
+$('#btnReset').addEventListener('click',()=>{
+  openConfirm('Сбросить все данные?','Будут удалены все записи, услуги и настройки. Вернётся демо-состояние.','Сбросить',()=>{
+    try{LS.st.removeItem(LS_KEY);}catch(e){}
+    location.reload();
+  });
+});
+
+/* ================= ВХОД И ИНИЦИАЛИЗАЦИЯ ================= */
+function hideViews(){['#site','#loginView','#admin','#staffLogin','#staff'].forEach(s=>{$(s).hidden=true;});}
+function enterAdmin(msg){hideViews();$('#admin').hidden=false;window.scrollTo(0,0);renderAdmin();if(msg)toast('Добро пожаловать!');}
+function showSite(){hideViews();$('#site').hidden=false;}
+function showLogin(){hideViews();$('#loginView').hidden=false;setTimeout(()=>$('#loginPass').focus(),60);}
+function logout(){SS.st.removeItem('sm_admin');showSite();toast('Вы вышли из админки');}
+
+/* ================= ПАНЕЛЬ СОТРУДНИКА ================= */
+const S={empId:null,filter:'today'};
+const isStaff=()=>{const id=SS.st.getItem('sm_staff');const e=id&&empById(id);return !!(e&&e.active);};
+function showStaffLogin(){
+  hideViews();$('#staffLogin').hidden=false;
+  const emps=activeEmps();
+  $('#stEmpChips').innerHTML=emps.length?emps.map((e,i)=>
+    '<button class="emp-chip'+(i===0?' on':'')+'" data-stemp="'+e.id+'" style="--ec:'+e.color+'">'+esc(e.name)+'<small>ПИН: '+e.pin.length+' цифр</small></button>').join('')
+    :'<div class="msg warn">Сотрудники не настроены. Обратитесь к администратору.</div>';
+  $('#stPin').value='';$('#stErr').style.display='none';
+}
+function enterStaff(msg){
+  S.empId=Number(SS.st.getItem('sm_staff'));
+  const e=empById(S.empId);
+  if(!e||!e.active){SS.st.removeItem('sm_staff');showStaffLogin();return;}
+  hideViews();$('#staff').hidden=false;window.scrollTo(0,0);
+  renderStaff();
+  if(msg)toast('Здравствуйте, '+e.name+'!');
+}
+function staffEmp(){return empById(S.empId);}
+function renderStaff(){
+  const e=staffEmp();if(!e){showStaffLogin();return;}
+  const t=todayISO();
+  const eToday=empOn(t);
+  const onShift=eToday&&eToday.id===e.id;
+  $('#stHead').innerHTML=
+    '<div><h2>'+esc(e.name)+' · ваши записи</h2>'+
+    '<span class="st-shift'+(onShift?' on':'')+'">'+(onShift?'🔧 Сегодня ваша смена':'😴 Сегодня выходной · работает '+(eToday?esc(eToday.name):'—'))+'</span></div>';
+  const wr=weekRange(),mr=monthRange();
+  const st=(label,from,to)=>{
+    const rev=revSum(e.id,from,to);const cnt=cntBook(e.id,from,to);
+    return '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(rev)+'</b><i>записей: '+cnt+'</i></div>';
+  };
+  $('#stStats').innerHTML=st('Выручка за день',t,t)+st('За неделю',wr.from,wr.to)+st('За месяц',mr.from,mr.to);
+  const F=[['today','Сегодня'],['upcoming','Будущие'],['new','Новые'],['done','Выполненные'],['all','Все']];
+  $('#stFilters').innerHTML=F.map(f=>'<button class="chipbtn'+(S.filter===f[0]?' on':'')+'" data-stf="'+f[0]+'">'+f[1]+'</button>').join('');
+  const nowM=new Date().getHours()*60+new Date().getMinutes();
+  let items=DB.bookings.filter(b=>b.employeeId===e.id);
+  if(S.filter==='today')items=items.filter(b=>b.date===t&&b.status!=='cancelled');
+  if(S.filter==='upcoming')items=items.filter(b=>b.date>=t&&b.status!=='cancelled');
+  if(S.filter==='new')items=items.filter(b=>b.status==='new');
+  if(S.filter==='done')items=items.filter(b=>b.status==='done');
+  items.sort((a,b)=>(S.filter==='all'?-1:1)*(a.date+a.time).localeCompare(b.date+b.time));
+  $('#stList').innerHTML=items.length?items.map(b=>{
+    const canAct=b.status==='new'||b.status==='confirmed';
+    const act=(b.status==='new'?'<button class="btn btn-ok btn-s" data-sok="'+b.code+'">✓ Подтвердить</button>':'')+
+      (b.status==='confirmed'?'<button class="btn btn-p btn-s" data-sdone="'+b.code+'">🏁 Завершить</button>':'')+
+      (canAct?'<button class="btn btn-o btn-s" data-sedit="'+b.code+'">✎ Изменить</button>'+
+      '<button class="btn btn-d btn-s" data-scancel="'+b.code+'">✗ Отменить</button>':'');
+    return '<div class="st-card'+(b.status==='cancelled'?' cancelled':'')+'">'+
+      '<div class="row1"><div class="dt">'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') · '+b.time+'<small>'+b.code+' · создана '+fmtDT(b.createdAt)+'</small></div>'+
+      '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+'<span class="money">'+fmtMoney(b.total)+'</span></div></div>'+
+      '<div class="cl">'+esc(b.name)+' · <a href="tel:'+b.phone.replace(/[^+\d]/g,'')+'">'+esc(b.phone)+'</a>'+(b.car?' · '+esc(b.car):'')+(b.plate?' · '+esc(b.plate):'')+'</div>'+
+      '<div class="sv">'+esc(b.services.map(s=>s.name).join(' + '))+' · ≈ '+b.services.reduce((a,s)=>{const x=svcById(s.id);return a+(x?x.dur:30);},0)+' мин</div>'+
+      (b.comment?'<div class="sv">💬 '+esc(b.comment)+'</div>':'')+
+      (act?'<div class="st-acts">'+act+'</div>':'')+
+    '</div>';
+  }).join(''):'<div class="empty">Записей в этом фильтре нет</div>';
+}
+$('#stFilters').addEventListener('click',e=>{
+  const b=e.target.closest('[data-stf]');if(!b)return;
+  S.filter=b.dataset.stf;renderStaff();
+});
+$('#stList').addEventListener('click',e=>{
+  const ok=e.target.closest('[data-sok]'),dn=e.target.closest('[data-sdone]'),ed=e.target.closest('[data-sedit]'),cn=e.target.closest('[data-scancel]');
+  const code=(ok&&ok.dataset.sok)||(dn&&dn.dataset.sdone)||(ed&&ed.dataset.sedit)||(cn&&cn.dataset.scancel);
+  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  if(ok){b.status='confirmed';save();renderStaff();toast(b.code+' подтверждена');}
+  if(dn){b.status='done';save();renderStaff();toast(b.code+' выполнена — молодец!');}
+  if(ed)openBookingEdit(b.code,{staff:true});
+  if(cn){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> ('+esc(b.name)+') на '+fmtDateHuman(b.date)+', '+b.time+' будет отменена.','Отменить',()=>{
+    b.status='cancelled';save();renderStaff();toast('Запись отменена');});}
+});
+$('#stEmpChips').addEventListener('click',e=>{
+  const c=e.target.closest('[data-stemp]');if(!c)return;
+  $$('#stEmpChips .emp-chip').forEach(x=>x.classList.toggle('on',x===c));
+});
+function staffLogin(){
+  const chips=$$('#stEmpChips .emp-chip');
+  const sel=chips.find(x=>x.classList.contains('on'));
+  if(!sel){toast('Выберите сотрудника','err');return;}
+  const emp=empById(sel.dataset.stemp);
+  if(!emp||!emp.active){toast('Сотрудник неактивен','err');return;}
+  if($('#stPin').value!==emp.pin){$('#stErr').style.display='block';return;}
+  $('#stPin').value='';$('#stErr').style.display='none';
+  SS.st.setItem('sm_staff',String(emp.id));
+  enterStaff(true);
+}
+$('#stLoginBtn').addEventListener('click',staffLogin);
+$('#stPin').addEventListener('keydown',e=>{if(e.key==='Enter')staffLogin();});
+$('#stBack').addEventListener('click',showSite);
+$('#stSite').addEventListener('click',showSite);
+$('#stLogout').addEventListener('click',()=>{SS.st.removeItem('sm_staff');showSite();toast('Вы вышли из панели');});
+
+/* --- входы --- */
+$('#adminBtn').addEventListener('click',()=>{isAdmin()?enterAdmin(true):showLogin();});
+$('#adminBtn2').addEventListener('click',e=>{e.preventDefault();isAdmin()?enterAdmin(true):showLogin();});
+$('#loginBack').addEventListener('click',showSite);
+$('#loginStaff').addEventListener('click',e=>{e.preventDefault();showStaffLogin();});
+$('#staffLink').addEventListener('click',e=>{e.preventDefault();showStaffLogin();});
+$('#mStaffLink').addEventListener('click',e=>{e.preventDefault();$('#mnav').classList.remove('open');showStaffLogin();});
+$('#loginBtn').addEventListener('click',()=>{
+  if($('#loginPass').value===DB.settings.adminPass){$('#loginPass').value='';$('#loginErr').style.display='none';SS.st.setItem('sm_admin','1');enterAdmin(true);}
+  else $('#loginErr').style.display='block';
+});
+$('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginBtn').click();});
+$('#aSite').addEventListener('click',showSite);
+$('#aLogout').addEventListener('click',logout);
+$('#burgerBtn').addEventListener('click',()=>$('#mnav').classList.toggle('open'));
+$$('#mnav a').forEach(a=>a.addEventListener('click',()=>$('#mnav').classList.remove('open')));
+$('#ftYear').textContent=new Date().getFullYear();
+
+applySettings();
+renderServicesGrid();
+renderStep();
+if(isAdmin())enterAdmin(false);
+if(isStaff())enterStaff(false);
+/* Если хранилище недоступно (например, изолированный предпросмотр) — предупреждаем,
+   что данные не сохранятся, вместо того чтобы молча терять записи. */
+if(!LS.ok){
+  const n=document.createElement('div');
+  n.className='msg warn';
+  n.style.cssText='position:fixed;left:12px;bottom:12px;z-index:210;max-width:340px;font-size:12.5px;box-shadow:var(--sh)';
+  n.textContent='Предпросмотр без доступа к хранилищу браузера: сайт и админка работают, но данные не сохранятся после закрытия. Откройте сайт по обычной ссылке — всё будет сохраняться.';
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(),15000);
+}
+</script>
+</body>
+</html>

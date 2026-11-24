@@ -1,0 +1,164 @@
+<body>
+<div id="site">
+<header class="hdr" id="siteHead">
+  <div class="container hdr-in">
+    <a class="logo" href="#top" id="brandName">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="1.6"/></svg>
+      <span><span class="js-co">ШинаСервис</span><small>шиномонтаж · онлайн-запись</small></span>
+    </a>
+    <nav class="nav">
+      <a href="#services">Услуги</a>
+      <a href="#booking">Запись</a>
+      <a href="#my">Мои записи</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+    <button class="btn btn-o btn-s" id="adminBtn">Админка</button>
+    <button class="burger" id="burgerBtn" aria-label="Меню">☰</button>
+  </div>
+  <nav class="mnav" id="mnav">
+    <a href="#services">Услуги</a>
+    <a href="#booking">Запись</a>
+    <a href="#my">Мои записи</a>
+    <a href="#faq">Вопросы</a>
+    <a href="#contacts">Контакты</a>
+    <a href="#" id="mStaffLink">🔧 Панель сотрудника</a>
+  </nav>
+</header>
+
+<main>
+<section class="hero" id="top">
+  <div class="ring r1"></div><div class="ring r2"></div>
+  <div class="container hero-in">
+    <div class="kick">🛞 Онлайн-запись · без очередей</div>
+    <h1>Запись на <em>шиномонтаж</em><br>за одну минуту</h1>
+    <p class="hero-sub">Сезонная смена шин, балансировка и ремонт колёс по предварительной записи. Выберите услуги и удобное время — и приезжайте к назначенному часу, без ожидания в очереди.</p>
+    <div class="hero-cta">
+      <a class="btn btn-p" href="#booking">Записаться</a>
+      <a class="btn btn-o" href="#services">Услуги и цены</a>
+    </div>
+    <div class="hero-chips">
+      <div class="hchip">🕐 <b class="js-hours">Пн–Сб: 09:00–20:00</b></div>
+      <div class="hchip">📍 <b class="js-addr">г. Москва, ул. Моторная, 12с3</b></div>
+      <div class="hchip">📞 <b><a class="js-phone" href="#">+7 (495) 120-45-67</a></b></div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><b>12</b><span>лет работы</span></div>
+      <div class="hstat"><b>40 000+</b><span>обслуженных авто</span></div>
+      <div class="hstat"><b>4</b><span>поста шиномонтажа</span></div>
+      <div class="hstat"><b>4.9 ★</b><span>рейтинг клиентов</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="services">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Услуги и <em>цены</em></h2>
+      <p class="sec-d">Стоимость и время указаны для легкового автомобиля. Нажмите «Выбрать» — услуга сразу добавится в форму записи.</p>
+    </div>
+    <div class="svc-grid" id="svcGrid"></div>
+  </div>
+</section>
+
+<section class="sec alt" id="how">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Как это <em>работает</em></h2>
+      <p class="sec-d">Весь визит занимает от 20 минут до полутора часов — в зависимости от выбранных услуг.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card"><div class="step-n">1</div><h3>Заявка онлайн</h3><p>Выберите услуги, дату и свободное время прямо на сайте — это займёт около минуты.</p></div>
+      <div class="step-card"><div class="step-n">2</div><h3>Подтверждение</h3><p>Администратор перезвонит по указанному телефону и подтвердит запись.</p></div>
+      <div class="step-card"><div class="step-n">3</div><h3>Работы</h3><p>Приезжайте к назначенному времени. Мастера сразу принимают авто на пост.</p></div>
+      <div class="step-card"><div class="step-n">4</div><h3>Готово</h3><p>Оплата после приёмки работ: наличными или картой. Гарантия на все виды работ.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="booking">
+  <div class="container">
+    <div class="sec-head" style="text-align:center;margin-inline:auto">
+      <h2 class="sec-t">Онлайн-<em>запись</em></h2>
+      <p class="sec-d">Три простых шага: услуги → дата и время → контакты.</p>
+    </div>
+    <div class="bk-wrap">
+      <div class="bk-card">
+        <div class="prog" id="prog">
+          <div class="prog-i" id="pi1"><b>1</b><span>Услуги</span></div>
+          <div class="prog-i" id="pi2"><b>2</b><span>Дата и время</span></div>
+          <div class="prog-i" id="pi3"><b>3</b><span>Контакты</span></div>
+        </div>
+        <div class="bk-body" id="bkPane"></div>
+        <div class="bk-nav" id="bkNav">
+          <button class="btn btn-o" id="bkBack">← Назад</button>
+          <button class="btn btn-p" id="bkNext">Далее →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec alt" id="my">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Мои <em>записи</em></h2>
+      <p class="sec-d">Введите телефон, который указывали при записи, — покажем все ваши визиты. Будущие записи можно отменить.</p>
+    </div>
+    <div class="drow" style="max-width:560px">
+      <div style="flex:1;min-width:200px"><label class="lb req">Телефон записи</label><input class="inp" id="myPhone" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>
+      <button class="btn btn-p" id="myFind">Найти</button>
+    </div>
+    <div id="myList" style="max-width:640px"></div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Частые <em>вопросы</em></h2>
+    </div>
+    <div class="faq" style="max-width:760px">
+      <details><summary>Нужно ли записываться заранее?</summary><div class="faq-b">Да, мы работаем по записи — так вы не ждёте в очереди. Запись на ближайший день возможна в день обращения, если есть свободные слоты. В высокий сезон (октябрь–ноябрь и март–апрель) рекомендуем записываться за 2–3 дня.</div></details>
+      <details><summary>Можно ли отменить или перенести запись?</summary><div class="faq-b">Да. Отменить запись можно самостоятельно в разделе «Мои записи» по номеру телефона. Для переноса позвоните нам по телефону <b class="js-phone"></b> — администратор подберёт новое время.</div></details>
+      <details><summary>Сколько времени занимает смена шин?</summary><div class="faq-b">Комплект без балансировки — около 1 часа, с балансировкой — до 1,5 часов. Смена колёс «на дисках» — около 40 минут. Время рассчитано для легкового автомобиля; внедорожники и R19+ могут занять чуть больше.</div></details>
+      <details><summary>Что делать, если я опаздываю?</summary><div class="faq-b">Мы держим слот за вами 15 минут. Если задерживаетесь сильнее — позвоните нам: постараемся сдвинуть запись или предложим ближайшее свободное время.</div></details>
+      <details><summary>Работаете ли вы с низким профилем и R18+?</summary><div class="faq-b">Да. У нас есть оборудование для низкого профиля и RunFlat, бесшпилечные сборочные головки и стенды балансировки. Уточните тип шин в комментарии к записи — мы подготовим нужный инструмент заранее.</div></details>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer id="contacts">
+  <div class="container">
+    <div class="ft-grid">
+      <div>
+        <div class="logo" style="margin-bottom:12px">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span><span class="js-co">ШинаСервис</span><small>шиномонтаж · онлайн-запись</small></span>
+        </div>
+        <p>Автосервис полного цикла: шиномонтаж, балансировка, ремонт колёс и сезонное хранение. Работаем точно по записи — без очередей и ожидания.</p>
+      </div>
+      <div>
+        <h4>Контакты</h4>
+        <ul>
+          <li>📞 <a class="js-phone" href="#">+7 (495) 120-45-67</a></li>
+          <li>📍 <span class="js-addr">г. Москва, ул. Моторная, 12с3</span></li>
+          <li>🕐 <span class="js-hours">Пн–Сб: 09:00–20:00</span></li>
+          <li>✉️ info@shinaservice.ru</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Запись</h4>
+        <p>Выберите услуги и время онлайн — это быстрее звонка.</p>
+        <a class="btn btn-p btn-s" href="#booking">Записаться онлайн</a>
+        <p style="margin:16px 0 0"><a href="#" id="staffLink">Панель сотрудника (по ПИН-коду) →</a></p>
+        <p style="margin:8px 0 0"><a href="#" id="adminBtn2">Вход для администратора →</a></p>
+      </div>
+    </div>
+    <div class="ft-bot">
+      <div>© <span id="ftYear">2026</span> <span class="js-co">ШинаСервис</span>. Все права защищены.</div>
+      <div>Демо-версия: данные хранятся локально в вашем браузере.</div>
+    </div>
+  </div>
+</footer>
+</div>
