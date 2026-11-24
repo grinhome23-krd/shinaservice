@@ -77,7 +77,7 @@
       <button class="a-tab on" data-tab="dash">📊 Панель</button>
       <button class="a-tab" data-tab="bookings">📋 Записи</button>
       <button class="a-tab" data-tab="services">🛞 Услуги</button>
-      <button class="a-tab" data-tab="schedule">🕐 Расписание</button>
+      <button class="a-tab" data-tab="schedule">🗓 Смены мастеров</button>
       <button class="a-tab" data-tab="settings">⚙️ Настройки</button>
     </nav>
 
@@ -91,6 +91,7 @@
       <div class="a-grid">
         <div class="panel">
           <h3>Загрузка за последние 7 дней</h3>
+          <p class="mut-sm">Нажмите на столбец — откроются все записи этого дня с подробностями.</p>
           <div class="chart" id="chart"></div>
         </div>
         <div class="panel">
@@ -161,6 +162,11 @@
     </section>
 
     <section id="a-schedule" class="a-pane" hidden style="padding-bottom:40px">
+      <div class="panel" style="margin-bottom:14px">
+        <h3>Календарь смен</h3>
+        <p class="mut-sm">Мастер на каждый день — по графику ротации или гибкому графику. Нажмите на день: назначение замены на конкретную дату, все записи смены с подробностями.</p>
+        <div id="empCal" style="margin-top:8px"></div>
+      </div>
       <div class="a-grid">
         <div class="panel">
           <h3>Рабочее время</h3>
@@ -210,6 +216,8 @@
               <div><label class="lb req">Телефон</label><input class="inp" id="stPhone"></div>
               <div><label class="lb req">Адрес</label><input class="inp" id="stAddr"></div>
               <div class="full"><label class="lb">ИП / ФИО предпринимателя для документов</label><input class="inp" id="stIP" placeholder="ИП Иванов Иван Иванович"></div>
+              <div class="full"><label class="lb">Почта для отчётов о сменах</label><input class="inp" id="stReportEmail" inputmode="email" placeholder="admin@example.ru">
+                <p class="mut-sm" style="margin-top:6px">Куда отправлять отчёт при нажатии «🏁 Завершить смену» в панели сотрудника: письмо с отчётом откроется в почтовом клиенте. Отправка в MAX администратору идёт через шлюз уведомлений (панель «Уведомления клиентам»).</p></div>
             </div>
             <button class="btn btn-p" id="stSave" style="margin-top:16px">Сохранить</button>
           </div>

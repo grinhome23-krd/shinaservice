@@ -68,7 +68,7 @@ function defaultDB(){
       {id:1,name:'Сергей',pin:'1111',color:'#60a5fa',active:true},
       {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
     ],
-    shiftStart:todayISO(),shiftFirst:1,staffSeen:{},
+    shiftStart:todayISO(),shiftFirst:1,shiftOverrides:{},reportEmail:'',staffSeen:{},
     smsChannel:'sms',smsWebhook:'',ipTitle:'',
     stats:[{v:'12',t:'лет работы'},{v:'40 000+',t:'обслуженных авто'},{v:'4',t:'поста шиномонтажа'},{v:'4.9 ★',t:'рейтинг клиентов'}]};
   const t=todayISO();
@@ -93,6 +93,9 @@ function defaultDB(){
 function shiftEmpFor(dateISO,settings){
   let emps=(settings.employees||[]).filter(e=>e.active);
   if(!emps.length)return null;
+  /* персональная замена на конкретную дату (календарь смен в админке) */
+  const ov=(settings.shiftOverrides||{})[dateISO];
+  if(ov&&ov!=='auto'){const oe=emps.find(x=>x.id===Number(ov));if(oe)return oe;}
   /* гибкий график: приоритет у сотрудников, выбравших этот день недели себе */
   const dow=new Date(dateISO+'T00:00:00').getDay();
   const flex=emps.filter(e=>e.flex&&e.flex.on&&Array.isArray(e.flex.wd)&&e.flex.wd.includes(dow));
@@ -119,6 +122,8 @@ function normalizeDB(d){
   const ids=d.settings.employees.map(e=>e.id);
   if(!ids.includes(Number(d.settings.shiftFirst)))d.settings.shiftFirst=d.settings.employees[0].id;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d.settings.shiftStart||''))d.settings.shiftStart=def.settings.shiftStart;
+  if(!d.settings.shiftOverrides||typeof d.settings.shiftOverrides!=='object'||Array.isArray(d.settings.shiftOverrides))d.settings.shiftOverrides={};
+  else Object.keys(d.settings.shiftOverrides).forEach(k=>{const v=d.settings.shiftOverrides[k];if(v!=='auto'&&!ids.includes(Number(v)))delete d.settings.shiftOverrides[k];});
   d.bookings.forEach(b=>{
     if(!b.employeeId||!ids.includes(b.employeeId)){
       const e=shiftEmpFor(b.date,d.settings);
