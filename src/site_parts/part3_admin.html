@@ -105,6 +105,11 @@
         <h3>Смены мастеров</h3>
         <div id="shiftInfo"></div>
       </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>Выручка по сотрудникам</h3>
+        <p class="mut-sm">«Факт» — сумма фактически выполненных заказов; «ожидается» — сумма по утверждённым (подтверждённым) записям, ещё не выполненным.</p>
+        <div id="empRevList"></div>
+      </div>
     </section>
 
     <section id="a-bookings" class="a-pane" hidden style="padding-bottom:40px">
@@ -210,6 +215,15 @@
             <p class="mut-sm">Четыре цифры в шапке сайта, под кнопками «Записаться». Значение обязательно, подпись — нет; пустое значение скрывает пункт.</p>
             <div class="f-grid" id="statsBox"></div>
             <button class="btn btn-p btn-s" id="statsSave" style="margin-top:14px">Сохранить статистику</button>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <h3>Уведомления клиентам</h3>
+            <p class="mut-sm">При подтверждении или отмене записи клиенту автоматически уходит SMS или сообщение в мессенджер MAX — клиент ничего не выбирает, канал задаётся здесь. Для реальной отправки укажите URL шлюза (POST JSON: phone, text, channel); без шлюза тексты сохраняются в журнале карточки записи.</p>
+            <div class="f-grid">
+              <div><label class="lb">Канал</label><select class="inp" id="stSmsCh"><option value="sms">SMS</option><option value="max">MAX (мессенджер)</option></select></div>
+              <div class="full"><label class="lb">URL шлюза отправки (необязательно)</label><input class="inp" id="stSmsUrl" placeholder="https://sms-gateway.example/send"></div>
+            </div>
+            <button class="btn btn-p btn-s" id="stSmsSave" style="margin-top:12px">Сохранить уведомления</button>
           </div>
           <div class="panel" style="margin-top:14px">
             <h3>Сотрудники и смены</h3>

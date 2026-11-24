@@ -279,6 +279,12 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
 .st-emp-row:last-child{border-bottom:none}
 .st-emp-row .nm{flex:1;min-width:140px;font-weight:700}
 .st-emp-row .pin{color:var(--dim);font-size:12.5px}
+/* выручка по сотрудникам */
+.rev-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.rev-row:first-child{border-top:none}
+.rev-row .nums{display:flex;gap:8px 24px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:13px;flex:1;min-width:200px}
+.rev-row .nums b{font-size:15px;color:var(--text)}
+.rev-row .nums .lbl{font-size:12px;color:var(--dim);display:block}
 /* responsive */
 @media(max-width:860px){
   .nav{display:none}
@@ -606,6 +612,11 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
         <h3>Смены мастеров</h3>
         <div id="shiftInfo"></div>
       </div>
+      <div class="panel" style="margin-top:14px">
+        <h3>Выручка по сотрудникам</h3>
+        <p class="mut-sm">«Факт» — сумма фактически выполненных заказов; «ожидается» — сумма по утверждённым (подтверждённым) записям, ещё не выполненным.</p>
+        <div id="empRevList"></div>
+      </div>
     </section>
 
     <section id="a-bookings" class="a-pane" hidden style="padding-bottom:40px">
@@ -711,6 +722,15 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
             <p class="mut-sm">Четыре цифры в шапке сайта, под кнопками «Записаться». Значение обязательно, подпись — нет; пустое значение скрывает пункт.</p>
             <div class="f-grid" id="statsBox"></div>
             <button class="btn btn-p btn-s" id="statsSave" style="margin-top:14px">Сохранить статистику</button>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <h3>Уведомления клиентам</h3>
+            <p class="mut-sm">При подтверждении или отмене записи клиенту автоматически уходит SMS или сообщение в мессенджер MAX — клиент ничего не выбирает, канал задаётся здесь. Для реальной отправки укажите URL шлюза (POST JSON: phone, text, channel); без шлюза тексты сохраняются в журнале карточки записи.</p>
+            <div class="f-grid">
+              <div><label class="lb">Канал</label><select class="inp" id="stSmsCh"><option value="sms">SMS</option><option value="max">MAX (мессенджер)</option></select></div>
+              <div class="full"><label class="lb">URL шлюза отправки (необязательно)</label><input class="inp" id="stSmsUrl" placeholder="https://sms-gateway.example/send"></div>
+            </div>
+            <button class="btn btn-p btn-s" id="stSmsSave" style="margin-top:12px">Сохранить уведомления</button>
           </div>
           <div class="panel" style="margin-top:14px">
             <h3>Сотрудники и смены</h3>
@@ -831,6 +851,7 @@ function defaultDB(){
       {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
     ],
     shiftStart:todayISO(),shiftFirst:1,staffSeen:{},
+    smsChannel:'sms',smsWebhook:'',
     stats:[{v:'12',t:'лет работы'},{v:'40 000+',t:'обслуженных авто'},{v:'4',t:'поста шиномонтажа'},{v:'4.9 ★',t:'рейтинг клиентов'}]};
   const t=todayISO();
   const mk=(day,time,st,name,phone,car,plate,ids,com,src)=>({
@@ -879,6 +900,7 @@ function normalizeDB(d){
     }
     if(b.empAuto===undefined)b.empAuto=true;
     if(!b.source)b.source='online';
+    if(!Array.isArray(b.notices))b.notices=[];
   });
   if(!d.settings.staffSeen||typeof d.settings.staffSeen!=='object')d.settings.staffSeen={};
   if(!Array.isArray(d.settings.stats))d.settings.stats=defaultDB().settings.stats;
@@ -913,6 +935,110 @@ const empBadge=empId=>{const e=empById(empId);return e?'<span class="emp-b" styl
 const liveDone=b=>b.status==='confirmed'||b.status==='done';
 const revSum=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).reduce((a,b)=>a+(b.total||0),0);
 const cntBook=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).length;
+/* факт — выполненные заказы; ожидается — утверждённые (подтверждённые) записи */
+const revDone=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='done'&&b.date>=from&&b.date<=to).reduce((a,b)=>a+(b.total||0),0);
+const cntDone=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='done'&&b.date>=from&&b.date<=to).length;
+const expSum=empId=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='confirmed'&&b.date>=todayISO()).reduce((a,b)=>a+(b.total||0),0);
+const expCnt=empId=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='confirmed'&&b.date>=todayISO()).length;
+
+/* --- звук и пуш-уведомления о новых онлайн-записях (админ и сотрудник) --- */
+let audioCtx=null;
+function unlockAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    audioCtx=audioCtx||new AC();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+  }catch(e){}
+}
+document.addEventListener('pointerdown',unlockAudio);
+function beep(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    unlockAudio();
+    const ctx=audioCtx||new AC();
+    const tone=(t0,f)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine';o.frequency.setValueAtTime(f,ctx.currentTime+t0);
+      g.gain.setValueAtTime(0.0001,ctx.currentTime+t0);
+      g.gain.exponentialRampToValueAtTime(0.3,ctx.currentTime+t0+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+t0+0.24);
+      o.connect(g);g.connect(ctx.destination);
+      o.start(ctx.currentTime+t0);o.stop(ctx.currentTime+t0+0.26);
+    };
+    tone(0,920);tone(0.26,1240);
+  }catch(e){}
+}
+function ensureNotifPerm(){
+  try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();}catch(e){}
+}
+function pushNotify(title,body){
+  beep();
+  try{
+    if('Notification' in window&&Notification.permission==='granted'){
+      const n=new Notification(title,{body:body,tag:'sm'+Date.now()});
+      n.onclick=()=>{try{window.focus();n.close();}catch(e){}};
+      return;
+    }
+  }catch(e){}
+  toast('🔔 '+title+' — '+body);
+}
+let seenCodes=null;
+function notifWatch(){
+  if(seenCodes===null){seenCodes=DB.bookings.map(b=>b.code);return;}
+  const fresh=[];
+  DB.bookings.forEach(b=>{if(!seenCodes.includes(b.code)){seenCodes.push(b.code);fresh.push(b);}});
+  const online=fresh.filter(b=>b.source==='online');
+  if(!online.length)return;
+  let notified=false;
+  if(typeof isStaff==='function'&&isStaff()){
+    const mine=online.filter(b=>b.employeeId===S.empId);
+    if(mine.length){
+      const b0=mine.slice().sort((a,b)=>b.createdAt-a.createdAt)[0];
+      pushNotify('Новая запись в вашу смену 🔧',b0.name+' · '+fmtDateShort(b0.date)+' '+b0.time+' · '+fmtMoney(b0.total)+(mine.length>1?' (и ещё '+(mine.length-1)+')':''));
+      if(S.filter==='notif'){S.notifIds=S.notifIds||new Set();mine.forEach(x=>S.notifIds.add(x.code));}
+      notified=true;
+    }
+  }else if(typeof isAdmin==='function'&&isAdmin()){
+    const b0=online.slice().sort((a,b)=>b.createdAt-a.createdAt)[0];
+    pushNotify('Новая онлайн-запись 📝',b0.name+' · '+fmtDateShort(b0.date)+' '+b0.time+' · '+fmtMoney(b0.total)+(online.length>1?' (и ещё '+(online.length-1)+')':''));
+    notified=true;
+  }
+  if(notified&&typeof renderAdmin==='function'&&typeof renderStaff==='function'&&!document.querySelector('.modal-box')){
+    if(typeof isStaff==='function'&&isStaff())renderStaff();
+    else if(typeof isAdmin==='function'&&isAdmin())renderAdmin();
+  }
+}
+setInterval(notifWatch,4000);
+
+/* --- автоматические уведомления клиенту: SMS или MAX, без выбора --- */
+function clientChannel(){return DB.settings.smsChannel==='max'?'MAX':'SMS';}
+function notifyClient(b,kind){
+  if(!b||!b.phone)return null;
+  if(!Array.isArray(b.notices))b.notices=[];
+  const ch=clientChannel();
+  const text=kind==='cancelled'
+    ?DB.settings.companyName+': запись '+b.code+' на '+fmtDateShort(b.date)+' '+b.time+' отменена. Записаться заново можно на сайте или по телефону '+DB.settings.phone
+    :clientMsg(b);
+  const notice={when:Date.now(),channel:ch,kind:kind||'',text:text,delivered:false};
+  const url=(DB.settings.smsWebhook||'').trim();
+  if(url){
+    notice.delivered=null;
+    try{
+      fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:ch.toLowerCase(),phone:b.phone,text:text,code:b.code,kind:kind||''})})
+        .then(r=>{notice.delivered=r.ok;save();})
+        .catch(()=>{notice.delivered=false;save();});
+    }catch(e){notice.delivered=false;}
+  }
+  b.notices.push(notice);
+  save();
+  return notice;
+}
+function noticeLine(b){
+  if(!Array.isArray(b.notices)||!b.notices.length)return '';
+  const n=b.notices[b.notices.length-1];
+  const mark=n.delivered===true?'✓ доставлено':(n.delivered===null?'⏳ отправляется через шлюз':'— шлюз не настроен, текст сохранён');
+  return '<div class="sv">📨 '+n.channel+' клиенту · '+fmtDT(n.when)+' '+mark+'</div>';
+}
 function weekRange(){const n=new Date();const dow=(n.getDay()+6)%7;const mon=new Date(n.getFullYear(),n.getMonth(),n.getDate()-dow);return{from:isoOf(mon),to:todayISO()};}
 function monthRange(){const t=todayISO();return{from:t.slice(0,8)+'01',to:t};}
 /* свободные слоты при редактировании (исключая саму запись) */
@@ -1291,7 +1417,8 @@ function findMy(){
     const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
     return '<div class="my-item '+(b.status==='cancelled'?'cancelled':'')+'">'+
       '<div class="l"><b>'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time+' · '+b.code+'</b>'+
-      '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span></div>'+
+      '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span>'+
+      (Array.isArray(b.notices)&&b.notices.length?'<span style="color:var(--acc2)">📨 Подтверждение отправлено вам по '+clientChannel()+'</span>':'')+'</div>'+
       '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+
       (canCancel?'<button class="btn btn-d btn-s" data-cancel="'+b.code+'">Отменить</button>':'')+
       '</div></div>';
@@ -1368,13 +1495,32 @@ function renderDash(){
     (e?empBadge(e.id):'<span class="st st-cancel">нет активных мастеров</span>')+'</div>';
   $('#shiftInfo').innerHTML=shRow(t,eToday)+shRow(tm,eTm)+
     '<p class="mut-sm" style="margin-top:10px">Мастера чередуются через день (Настройки → «Сотрудники и смены»). Записи автоматически закрепляются за мастером по дате визита.</p>';
+  $('#empRevList').innerHTML=empRevenueRows().map(r=>
+    '<div class="rev-row">'+empBadge(r.e.id)+
+    '<div class="nums">'+
+      '<span><span class="lbl">Факт за месяц (выполнено)</span><b>'+fmtMoney(r.mRev)+'</b> · '+r.mCnt+' заказ.</span>'+
+      '<span><span class="lbl">Факт всего</span><b>'+fmtMoney(r.allRev)+'</b> · '+r.allCnt+' заказ.</span>'+
+      '<span><span class="lbl">Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(r.expRev)+'</b> · '+r.expCnt+' запис.</span>'+
+    '</div></div>').join('')||'<div class="empty">Сотрудников нет</div>';
+}
+function empRevenueRows(){
+  const t=todayISO(),mr=monthRange();
+  return DB.settings.employees.map(e=>{
+    const mine=DB.bookings.filter(b=>b.employeeId===e.id);
+    const done=mine.filter(b=>b.status==='done');
+    const mDone=done.filter(b=>b.date>=mr.from&&b.date<=mr.to);
+    const exp=mine.filter(b=>b.status==='confirmed'&&b.date>=t);
+    return {e,mRev:mDone.reduce((a,b)=>a+(b.total||0),0),mCnt:mDone.length,
+      allRev:done.reduce((a,b)=>a+(b.total||0),0),allCnt:done.length,
+      expRev:exp.reduce((a,b)=>a+(b.total||0),0),expCnt:exp.length};
+  });
 }
 $('#newList').addEventListener('click',e=>{
   const ok=e.target.closest('[data-ok]');const no=e.target.closest('[data-no]');
   const b=DB.bookings.find(x=>x.code===((ok&&ok.dataset.ok)||(no&&no.dataset.no)));
   if(!b)return;
-  if(ok){b.status='confirmed';save();renderDash();toast('Запись '+b.code+' подтверждена');}
-  if(no){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> будет отменена.','Отменить',()=>{b.status='cancelled';save();renderDash();toast('Запись отменена');});}
+  if(ok){b.status='confirmed';notifyClient(b,'confirmed');save();renderDash();toast('Запись '+b.code+' подтверждена · клиенту отправлено '+clientChannel());}
+  if(no){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> будет отменена, клиент получит уведомление.','Отменить',()=>{b.status='cancelled';notifyClient(b,'cancelled');save();renderDash();toast('Запись отменена · клиент уведомлён');});}
 });
 
 /* --- записи --- */
@@ -1425,8 +1571,10 @@ $('#fQ').addEventListener('input',e=>{A.f.q=e.target.value;renderBookings();});
 $('#bkBody').addEventListener('change',e=>{
   const sel=e.target.closest('[data-st]');if(!sel)return;
   const b=DB.bookings.find(x=>x.code===sel.dataset.st);if(!b)return;
-  b.status=sel.value;save();
-  toast('Статус '+b.code+': '+ST[b.status].t);
+  const was=b.status;b.status=sel.value;
+  if(b.status!==was&&(b.status==='confirmed'||b.status==='cancelled'))notifyClient(b,b.status);
+  save();
+  toast('Статус '+b.code+': '+ST[b.status].t+((b.status==='confirmed'||b.status==='cancelled')&&b.status!==was?' · клиент уведомлён ('+clientChannel()+')':''));
 });
 $('#bkBody').addEventListener('click',e=>{
   const v=e.target.closest('[data-view]');const d=e.target.closest('[data-del]');const ed=e.target.closest('[data-edit]');
@@ -1457,6 +1605,11 @@ function openBookingDetails(code){
         '<div class="row"><span>Источник</span><b>'+srcBadge(b.source)+'</b></div>'+
         '<div class="row"><span>Создана</span><b>'+fmtDT(b.createdAt)+'</b></div>'+
       '</div>'+
+      '<div class="msg" style="margin-top:10px"><b>📨 Уведомления клиенту</b>'+
+        (Array.isArray(b.notices)&&b.notices.length
+          ?b.notices.map(n=>'<div style="margin-top:6px;font-size:13px">'+n.channel+' · '+fmtDT(n.when)+' · '+(n.delivered===true?'✓ доставлено':(n.delivered===null?'⏳ отправляется через шлюз':'⚠ шлюз не настроен — текст сохранён'))+': '+esc(n.text)+'</div>').join('')
+          :'<div style="margin-top:6px">пока не отправлялись</div>')+
+      '</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
         '<button class="btn btn-o btn-s" id="bdEdit">✎ Изменить запись</button>'+
         ['new','confirmed','done','cancelled'].map(x=>'<button class="btn '+(b.status===x?'btn-p':'btn-o')+' btn-s" data-setst="'+x+'">'+ST[x].t+'</button>').join('')+
@@ -1464,7 +1617,9 @@ function openBookingDetails(code){
     '</div>');
   $('#bdEdit').onclick=()=>openBookingEdit(b.code,{staff:false});
   $$('#modalBox [data-setst]').forEach(btn=>btn.onclick=()=>{
-    b.status=btn.dataset.setst;save();closeModal();renderAdmin();toast('Статус изменён: '+ST[b.status].t);
+    const was=b.status;b.status=btn.dataset.setst;
+    if(b.status!==was&&(b.status==='confirmed'||b.status==='cancelled'))notifyClient(b,b.status);
+    save();closeModal();renderAdmin();toast('Статус изменён: '+ST[b.status].t);
   });
 }
 /* --- редактирование записи (админ и сотрудник) --- */
@@ -1607,43 +1762,16 @@ function openManualBooking(opts){
       employeeId:assignEmp($('#mbEmp').value,date),empAuto:$('#mbEmp').value==='auto'};
     DB.bookings.push(nb);
     save();closeModal();
+    const nn=notifyClient(nb,'confirmed');
     if(isStaffView)renderStaff();else renderAdmin();
-    toast('Запись '+nb.code+' создана');
-    openClientNotify(nb);
+    toast('Запись '+nb.code+' создана · клиенту автоматически отправлено '+(nn?nn.channel:'уведомление'));
   };
 }
 function assignEmp(selValue,date){
   if(selValue!=='auto'){const e=empById(selValue);if(e)return e.id;}
   const e=empOn(date);return e?e.id:null;
 }
-/* --- уведомление клиенту после создания записи вручную (по звонку) --- */
-function openClientNotify(b){
-  const msg=clientMsg(b);
-  const hasPhone=normDigits(b.phone).length===11;
-  openModal(
-    '<div class="m-head"><h3>Запись '+b.code+' создана</h3><button class="m-x" data-mx>×</button></div>'+
-    '<div class="m-body">'+
-      '<div class="sumbox">'+
-        '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(b.date)+', '+b.time+'</b></div>'+
-        '<div class="row"><span>Клиент</span><b>'+esc(b.name)+' · '+esc(b.phone)+'</b></div>'+
-        '<div class="row"><span>Услуги</span><b>'+esc(b.services.map(s=>s.name).join(' + '))+'</b></div>'+
-        (b.employeeId&&empById(b.employeeId)?'<div class="row"><span>Мастер</span><b>'+esc(empById(b.employeeId).name)+'</b></div>':'')+
-        '<div class="row"><span>Сумма</span><b>'+fmtMoney(b.total)+'</b></div>'+
-      '</div>'+
-      '<label class="lb">Уведомление клиенту об успешной записи</label>'+
-      '<div class="msg" style="white-space:pre-line;font-size:13px">'+esc(msg)+'</div>'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'+
-        '<button class="btn btn-o btn-s" id="cnCopy">📋 Скопировать текст</button>'+
-        '<button class="btn btn-o btn-s" id="cnIcs">📅 В календарь</button>'+
-        (hasPhone?'<a class="btn btn-ok btn-s" target="_blank" rel="noopener" href="'+waLink(b.phone,msg)+'">💬 WhatsApp клиенту</a>':'')+
-        '<a class="btn btn-o btn-s" target="_blank" rel="noopener" href="'+tgLink(msg)+'">✈️ Telegram</a>'+
-      '</div>'+
-      '<p class="mut-sm" style="margin-top:10px">Мессенджер откроется с готовым текстом — останется нажать «отправить». Так клиент получает подтверждение сразу после звонка.</p>'+
-    '</div>'+
-    '<div class="m-foot"><button class="btn btn-p" data-mx>Готово</button></div>');
-  $('#cnCopy').onclick=()=>copyText(msg);
-  $('#cnIcs').onclick=()=>downloadIcs(b);
-}
+/* --- уведомление клиенту при ручной записи отправляется автоматически (notifyClient) --- */
 $('#btnAddBook').addEventListener('click',openManualBooking);
 function exportCsv(){
   const list=filteredBookings();
@@ -1769,11 +1897,22 @@ function renderSettings(){
   $('#stName').value=s.companyName;
   $('#stPhone').value=s.phone;
   $('#stAddr').value=s.address;
+  $('#stSmsCh').value=s.smsChannel==='max'?'max':'sms';
+  $('#stSmsUrl').value=s.smsWebhook||'';
   $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
   renderEmployees();
   renderShiftCfg();
   renderStatsCfg();
 }
+/* --- уведомления клиентам: канал и шлюз --- */
+$('#stSmsSave').addEventListener('click',()=>{
+  const u=$('#stSmsUrl').value.trim();
+  if(u&&!/^https?:\/\//i.test(u)){toast('URL шлюза должен начинаться с http:// или https://','err');return;}
+  DB.settings.smsChannel=$('#stSmsCh').value==='max'?'max':'sms';
+  DB.settings.smsWebhook=u;
+  save();applySettings();
+  toast('Канал уведомлений: '+clientChannel()+(u?' · шлюз подключён':' · без шлюза тексты сохраняются в журнале'));
+});
 /* --- статистика на главной (редактируемые цифры hero) --- */
 function renderStatsCfg(){
   const st=DB.settings.stats||[];
@@ -1969,11 +2108,10 @@ function renderStaff(){
       '<button class="btn btn-p btn-s" data-stact="add">+ Записать клиента</button>'+
     '</div>';
   const wr=weekRange(),mr=monthRange();
-  const st=(label,from,to)=>{
-    const rev=revSum(e.id,from,to);const cnt=cntBook(e.id,from,to);
-    return '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(rev)+'</b><i>записей: '+cnt+'</i></div>';
-  };
-  $('#stStats').innerHTML=st('Выручка за день',t,t)+st('За неделю',wr.from,wr.to)+st('За месяц',mr.from,mr.to);
+  const fact=(label,from,to)=>
+    '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(revDone(e.id,from,to))+'</b><i>выполнено заказов: '+cntDone(e.id,from,to)+'</i></div>';
+  $('#stStats').innerHTML=fact('Факт за день',t,t)+fact('Факт за неделю',wr.from,wr.to)+fact('Факт за месяц',mr.from,mr.to)+
+    '<div class="st-stat"><span>Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(expSum(e.id))+'</b><i>записей: '+expCnt(e.id)+'</i></div>';
   const F=[['today','Сегодня'],['upcoming','Будущие'],['new','Новые'],['notif','🔔 Непросмотренные'],['done','Выполненные'],['all','Все']];
   $('#stFilters').innerHTML=F.map(f=>'<button class="chipbtn'+(S.filter===f[0]?' on':'')+'" data-stf="'+f[0]+'">'+f[1]+'</button>').join('');
   const nowM=new Date().getHours()*60+new Date().getMinutes();
@@ -1997,6 +2135,7 @@ function renderStaff(){
       '<div class="cl">'+esc(b.name)+' · <a href="tel:'+b.phone.replace(/[^+\d]/g,'')+'">'+esc(b.phone)+'</a>'+(b.car?' · '+esc(b.car):'')+(b.plate?' · '+esc(b.plate):'')+'</div>'+
       '<div class="sv">'+esc(b.services.map(s=>s.name).join(' + '))+' · ≈ '+b.services.reduce((a,s)=>{const x=svcById(s.id);return a+(x?x.dur:30);},0)+' мин</div>'+
       (b.comment?'<div class="sv">💬 '+esc(b.comment)+'</div>':'')+
+      noticeLine(b)+
       (act?'<div class="st-acts">'+act+'</div>':'')+
     '</div>';
   }).join(''):'<div class="empty">Записей в этом фильтре нет</div>';
@@ -2020,11 +2159,11 @@ $('#stList').addEventListener('click',e=>{
   const ok=e.target.closest('[data-sok]'),dn=e.target.closest('[data-sdone]'),ed=e.target.closest('[data-sedit]'),cn=e.target.closest('[data-scancel]');
   const code=(ok&&ok.dataset.sok)||(dn&&dn.dataset.sdone)||(ed&&ed.dataset.sedit)||(cn&&cn.dataset.scancel);
   const b=DB.bookings.find(x=>x.code===code);if(!b)return;
-  if(ok){b.status='confirmed';save();renderStaff();toast(b.code+' подтверждена');}
+  if(ok){b.status='confirmed';notifyClient(b,'confirmed');save();renderStaff();toast(b.code+' подтверждена · клиенту отправлено '+clientChannel());}
   if(dn){b.status='done';save();renderStaff();toast(b.code+' выполнена — молодец!');}
   if(ed)openBookingEdit(b.code,{staff:true});
-  if(cn){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> ('+esc(b.name)+') на '+fmtDateHuman(b.date)+', '+b.time+' будет отменена.','Отменить',()=>{
-    b.status='cancelled';save();renderStaff();toast('Запись отменена');});}
+  if(cn){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> ('+esc(b.name)+') на '+fmtDateHuman(b.date)+', '+b.time+' будет отменена, клиент получит уведомление.','Отменить',()=>{
+    b.status='cancelled';notifyClient(b,'cancelled');save();renderStaff();toast('Запись отменена · клиент уведомлён');});}
 });
 $('#stEmpChips').addEventListener('click',e=>{
   const c=e.target.closest('[data-stemp]');if(!c)return;
@@ -2039,6 +2178,7 @@ function staffLogin(){
   if($('#stPin').value!==emp.pin){$('#stErr').style.display='block';return;}
   $('#stPin').value='';$('#stErr').style.display='none';
   SS.st.setItem('sm_staff',String(emp.id));
+  ensureNotifPerm();
   enterStaff(true);
 }
 $('#stLoginBtn').addEventListener('click',staffLogin);
@@ -2055,7 +2195,7 @@ $('#loginStaff').addEventListener('click',e=>{e.preventDefault();showStaffLogin(
 $('#staffLink').addEventListener('click',e=>{e.preventDefault();showStaffLogin();});
 $('#mStaffLink').addEventListener('click',e=>{e.preventDefault();$('#mnav').classList.remove('open');showStaffLogin();});
 $('#loginBtn').addEventListener('click',()=>{
-  if($('#loginPass').value===DB.settings.adminPass){$('#loginPass').value='';$('#loginErr').style.display='none';SS.st.setItem('sm_admin','1');enterAdmin(true);}
+  if($('#loginPass').value===DB.settings.adminPass){$('#loginPass').value='';$('#loginErr').style.display='none';SS.st.setItem('sm_admin','1');ensureNotifPerm();enterAdmin(true);}
   else $('#loginErr').style.display='block';
 });
 $('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginBtn').click();});
@@ -2071,23 +2211,16 @@ renderStep();
 if(isAdmin())enterAdmin(false);
 if(isStaff())enterStaff(false);
 /* Межвкладочные обновления: если клиент записался в другой вкладке этого браузера
-   (localStorage общий), панель сотрудника и админка обновляются сами, а сотрудник
-   получает уведомление о новой записи в свою смену. */
-let liveSeenTs=Date.now();
+   (localStorage общий), админка и панель сотрудника перечитывают данные, а
+   notifWatch() показывает пуш-уведомление со звуком о новой записи. */
 window.addEventListener('storage',e=>{
   if(e.key&&e.key!==LS_KEY)return;
   DB=loadDB();
-  if(isStaff()){
-    const fresh=unseenForStaff(staffEmp()).filter(b=>(b.createdAt||0)>liveSeenTs);
-    if(fresh.length){
-      const b0=fresh.slice().sort((a,b)=>b.createdAt-a.createdAt)[0];
-      toast('🔔 Новая запись: '+b0.name+' · '+fmtDateShort(b0.date)+' '+b0.time+(fresh.length>1?' (и ещё '+(fresh.length-1)+')':''));
-      if(S.filter==='notif'){S.notifIds=S.notifIds||new Set();fresh.forEach(x=>S.notifIds.add(x.code));}
-    }
-    liveSeenTs=Date.now();
-    renderStaff();
+  notifWatch();
+  if(!document.querySelector('.modal-box')){
+    if(isStaff())renderStaff();
+    if(isAdmin())renderAdmin();
   }
-  if(isAdmin())renderAdmin();
 });
 /* Если хранилище недоступно (например, изолированный предпросмотр) — предупреждаем,
    что данные не сохранятся, вместо того чтобы молча терять записи. */

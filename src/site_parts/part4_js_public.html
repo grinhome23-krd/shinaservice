@@ -69,6 +69,7 @@ function defaultDB(){
       {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
     ],
     shiftStart:todayISO(),shiftFirst:1,staffSeen:{},
+    smsChannel:'sms',smsWebhook:'',
     stats:[{v:'12',t:'лет работы'},{v:'40 000+',t:'обслуженных авто'},{v:'4',t:'поста шиномонтажа'},{v:'4.9 ★',t:'рейтинг клиентов'}]};
   const t=todayISO();
   const mk=(day,time,st,name,phone,car,plate,ids,com,src)=>({
@@ -117,6 +118,7 @@ function normalizeDB(d){
     }
     if(b.empAuto===undefined)b.empAuto=true;
     if(!b.source)b.source='online';
+    if(!Array.isArray(b.notices))b.notices=[];
   });
   if(!d.settings.staffSeen||typeof d.settings.staffSeen!=='object')d.settings.staffSeen={};
   if(!Array.isArray(d.settings.stats))d.settings.stats=defaultDB().settings.stats;
@@ -151,6 +153,110 @@ const empBadge=empId=>{const e=empById(empId);return e?'<span class="emp-b" styl
 const liveDone=b=>b.status==='confirmed'||b.status==='done';
 const revSum=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).reduce((a,b)=>a+(b.total||0),0);
 const cntBook=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).length;
+/* факт — выполненные заказы; ожидается — утверждённые (подтверждённые) записи */
+const revDone=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='done'&&b.date>=from&&b.date<=to).reduce((a,b)=>a+(b.total||0),0);
+const cntDone=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='done'&&b.date>=from&&b.date<=to).length;
+const expSum=empId=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='confirmed'&&b.date>=todayISO()).reduce((a,b)=>a+(b.total||0),0);
+const expCnt=empId=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='confirmed'&&b.date>=todayISO()).length;
+
+/* --- звук и пуш-уведомления о новых онлайн-записях (админ и сотрудник) --- */
+let audioCtx=null;
+function unlockAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    audioCtx=audioCtx||new AC();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+  }catch(e){}
+}
+document.addEventListener('pointerdown',unlockAudio);
+function beep(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    unlockAudio();
+    const ctx=audioCtx||new AC();
+    const tone=(t0,f)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine';o.frequency.setValueAtTime(f,ctx.currentTime+t0);
+      g.gain.setValueAtTime(0.0001,ctx.currentTime+t0);
+      g.gain.exponentialRampToValueAtTime(0.3,ctx.currentTime+t0+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+t0+0.24);
+      o.connect(g);g.connect(ctx.destination);
+      o.start(ctx.currentTime+t0);o.stop(ctx.currentTime+t0+0.26);
+    };
+    tone(0,920);tone(0.26,1240);
+  }catch(e){}
+}
+function ensureNotifPerm(){
+  try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();}catch(e){}
+}
+function pushNotify(title,body){
+  beep();
+  try{
+    if('Notification' in window&&Notification.permission==='granted'){
+      const n=new Notification(title,{body:body,tag:'sm'+Date.now()});
+      n.onclick=()=>{try{window.focus();n.close();}catch(e){}};
+      return;
+    }
+  }catch(e){}
+  toast('🔔 '+title+' — '+body);
+}
+let seenCodes=null;
+function notifWatch(){
+  if(seenCodes===null){seenCodes=DB.bookings.map(b=>b.code);return;}
+  const fresh=[];
+  DB.bookings.forEach(b=>{if(!seenCodes.includes(b.code)){seenCodes.push(b.code);fresh.push(b);}});
+  const online=fresh.filter(b=>b.source==='online');
+  if(!online.length)return;
+  let notified=false;
+  if(typeof isStaff==='function'&&isStaff()){
+    const mine=online.filter(b=>b.employeeId===S.empId);
+    if(mine.length){
+      const b0=mine.slice().sort((a,b)=>b.createdAt-a.createdAt)[0];
+      pushNotify('Новая запись в вашу смену 🔧',b0.name+' · '+fmtDateShort(b0.date)+' '+b0.time+' · '+fmtMoney(b0.total)+(mine.length>1?' (и ещё '+(mine.length-1)+')':''));
+      if(S.filter==='notif'){S.notifIds=S.notifIds||new Set();mine.forEach(x=>S.notifIds.add(x.code));}
+      notified=true;
+    }
+  }else if(typeof isAdmin==='function'&&isAdmin()){
+    const b0=online.slice().sort((a,b)=>b.createdAt-a.createdAt)[0];
+    pushNotify('Новая онлайн-запись 📝',b0.name+' · '+fmtDateShort(b0.date)+' '+b0.time+' · '+fmtMoney(b0.total)+(online.length>1?' (и ещё '+(online.length-1)+')':''));
+    notified=true;
+  }
+  if(notified&&typeof renderAdmin==='function'&&typeof renderStaff==='function'&&!document.querySelector('.modal-box')){
+    if(typeof isStaff==='function'&&isStaff())renderStaff();
+    else if(typeof isAdmin==='function'&&isAdmin())renderAdmin();
+  }
+}
+setInterval(notifWatch,4000);
+
+/* --- автоматические уведомления клиенту: SMS или MAX, без выбора --- */
+function clientChannel(){return DB.settings.smsChannel==='max'?'MAX':'SMS';}
+function notifyClient(b,kind){
+  if(!b||!b.phone)return null;
+  if(!Array.isArray(b.notices))b.notices=[];
+  const ch=clientChannel();
+  const text=kind==='cancelled'
+    ?DB.settings.companyName+': запись '+b.code+' на '+fmtDateShort(b.date)+' '+b.time+' отменена. Записаться заново можно на сайте или по телефону '+DB.settings.phone
+    :clientMsg(b);
+  const notice={when:Date.now(),channel:ch,kind:kind||'',text:text,delivered:false};
+  const url=(DB.settings.smsWebhook||'').trim();
+  if(url){
+    notice.delivered=null;
+    try{
+      fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:ch.toLowerCase(),phone:b.phone,text:text,code:b.code,kind:kind||''})})
+        .then(r=>{notice.delivered=r.ok;save();})
+        .catch(()=>{notice.delivered=false;save();});
+    }catch(e){notice.delivered=false;}
+  }
+  b.notices.push(notice);
+  save();
+  return notice;
+}
+function noticeLine(b){
+  if(!Array.isArray(b.notices)||!b.notices.length)return '';
+  const n=b.notices[b.notices.length-1];
+  const mark=n.delivered===true?'✓ доставлено':(n.delivered===null?'⏳ отправляется через шлюз':'— шлюз не настроен, текст сохранён');
+  return '<div class="sv">📨 '+n.channel+' клиенту · '+fmtDT(n.when)+' '+mark+'</div>';
+}
 function weekRange(){const n=new Date();const dow=(n.getDay()+6)%7;const mon=new Date(n.getFullYear(),n.getMonth(),n.getDate()-dow);return{from:isoOf(mon),to:todayISO()};}
 function monthRange(){const t=todayISO();return{from:t.slice(0,8)+'01',to:t};}
 /* свободные слоты при редактировании (исключая саму запись) */
@@ -529,7 +635,8 @@ function findMy(){
     const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
     return '<div class="my-item '+(b.status==='cancelled'?'cancelled':'')+'">'+
       '<div class="l"><b>'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time+' · '+b.code+'</b>'+
-      '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span></div>'+
+      '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span>'+
+      (Array.isArray(b.notices)&&b.notices.length?'<span style="color:var(--acc2)">📨 Подтверждение отправлено вам по '+clientChannel()+'</span>':'')+'</div>'+
       '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+
       (canCancel?'<button class="btn btn-d btn-s" data-cancel="'+b.code+'">Отменить</button>':'')+
       '</div></div>';
