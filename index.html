@@ -274,6 +274,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
 .st-shift{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;border:1px solid var(--line2);background:var(--card);color:var(--mut)}
 .st-shift.on{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--ok)}
 .st-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.st-stats[hidden]{display:none}
 .st-stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
 .st-stat span{color:var(--dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block}
 .st-stat b{display:block;font-size:clamp(16px,4.5vw,22px);margin-top:5px;color:var(--acc2);white-space:nowrap}
@@ -2557,12 +2558,15 @@ function renderStaff(){
       '<button class="btn btn-p btn-s" data-stact="add">+ Записать клиента</button>'+
       (onShift?'<button class="btn btn-o btn-s" data-stact="end" title="Отчёт за смену — PDF, почта и MAX администратору">🏁 Завершить смену</button>':'')+
     '</div>';
-  const wr=weekRange(),mr=monthRange();
-  const fact=(label,from,to)=>
-    '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(revDone(e.id,from,to))+'</b><i>выполнено заказов: '+cntDone(e.id,from,to)+'</i></div>';
-  $('#stStats').innerHTML=fact('Факт за день',t,t)+fact('Факт за неделю',wr.from,wr.to)+fact('Факт за месяц',mr.from,mr.to)+
-    '<div class="st-stat"><span>Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(expSum(e.id))+'</b><i>записей: '+expCnt(e.id)+'</i></div>';
   const cal=S.view==='cal';
+  if(!cal){
+    const wr=weekRange(),mr=monthRange();
+    const fact=(label,from,to)=>
+      '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(revDone(e.id,from,to))+'</b><i>выполнено заказов: '+cntDone(e.id,from,to)+'</i></div>';
+    $('#stStats').innerHTML=fact('Факт за день',t,t)+fact('Факт за неделю',wr.from,wr.to)+fact('Факт за месяц',mr.from,mr.to)+
+      '<div class="st-stat"><span>Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(expSum(e.id))+'</b><i>записей: '+expCnt(e.id)+'</i></div>';
+  }
+  $('#stStats').hidden=cal;
   $('#stFilters').hidden=cal;
   $('#stList').hidden=cal;
   $('#stCal').hidden=!cal;

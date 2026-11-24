@@ -860,12 +860,15 @@ function renderStaff(){
       '<button class="btn btn-p btn-s" data-stact="add">+ Записать клиента</button>'+
       (onShift?'<button class="btn btn-o btn-s" data-stact="end" title="Отчёт за смену — PDF, почта и MAX администратору">🏁 Завершить смену</button>':'')+
     '</div>';
-  const wr=weekRange(),mr=monthRange();
-  const fact=(label,from,to)=>
-    '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(revDone(e.id,from,to))+'</b><i>выполнено заказов: '+cntDone(e.id,from,to)+'</i></div>';
-  $('#stStats').innerHTML=fact('Факт за день',t,t)+fact('Факт за неделю',wr.from,wr.to)+fact('Факт за месяц',mr.from,mr.to)+
-    '<div class="st-stat"><span>Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(expSum(e.id))+'</b><i>записей: '+expCnt(e.id)+'</i></div>';
   const cal=S.view==='cal';
+  if(!cal){
+    const wr=weekRange(),mr=monthRange();
+    const fact=(label,from,to)=>
+      '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(revDone(e.id,from,to))+'</b><i>выполнено заказов: '+cntDone(e.id,from,to)+'</i></div>';
+    $('#stStats').innerHTML=fact('Факт за день',t,t)+fact('Факт за неделю',wr.from,wr.to)+fact('Факт за месяц',mr.from,mr.to)+
+      '<div class="st-stat"><span>Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(expSum(e.id))+'</b><i>записей: '+expCnt(e.id)+'</i></div>';
+  }
+  $('#stStats').hidden=cal;
   $('#stFilters').hidden=cal;
   $('#stList').hidden=cal;
   $('#stCal').hidden=!cal;
