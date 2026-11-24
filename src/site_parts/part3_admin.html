@@ -54,6 +54,7 @@
     <div class="st-head" id="stHead"></div>
     <div class="st-stats" id="stStats"></div>
     <div class="chips st-filters" id="stFilters"></div>
+    <div id="stCal" style="margin-top:12px" hidden></div>
     <div id="stList" style="margin-top:12px"></div>
   </div>
 </div>
@@ -147,6 +148,7 @@
     <section id="a-services" class="a-pane" hidden style="padding-bottom:40px">
       <div class="tb">
         <div class="spacer"></div>
+        <button class="btn btn-o btn-s" id="btnPrintPrice">🖨 Прайс-лист для печати</button>
         <button class="btn btn-p btn-s" id="btnAddSvc">+ Добавить услугу</button>
       </div>
       <div class="table-wrap">
@@ -207,6 +209,7 @@
               <div class="full"><label class="lb req">Название</label><input class="inp" id="stName"></div>
               <div><label class="lb req">Телефон</label><input class="inp" id="stPhone"></div>
               <div><label class="lb req">Адрес</label><input class="inp" id="stAddr"></div>
+              <div class="full"><label class="lb">ИП / ФИО предпринимателя для документов</label><input class="inp" id="stIP" placeholder="ИП Иванов Иван Иванович"></div>
             </div>
             <button class="btn btn-p" id="stSave" style="margin-top:16px">Сохранить</button>
           </div>
@@ -231,7 +234,7 @@
             <button class="btn btn-o btn-s" id="btnAddEmp" style="margin-top:12px">+ Добавить сотрудника</button>
             <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">
               <h3 style="margin-bottom:8px">График смен</h3>
-              <p class="mut-sm">Активные сотрудники чередуются через день, начиная с даты старта: в первый день работает выбранный ниже сотрудник. Деактивированный сотрудник пропадает из ротации, его записи остаются.</p>
+              <p class="mut-sm">Активные сотрудники чередуются через день, начиная с даты старта: в первый день работает выбранный ниже сотрудник. Гибкий график (в карточке сотрудника) приоритетнее: в выбранные им дни недели смена закрепляется за ним. Деактивированный сотрудник пропадает из ротации, его записи остаются.</p>
               <div class="f-grid">
                 <div><label class="lb">Дата старта графика</label><input type="date" class="inp" id="shStart"></div>
                 <div><label class="lb">Работает в день старта</label><select class="inp" id="shFirst"></select></div>
@@ -271,5 +274,6 @@
 </div>
 
 <div id="toasts"></div>
+<div id="printSheet"></div>
 <div class="modal" id="modal"><div class="modal-box" id="modalBox"></div></div>
 <noscript><div style="padding:20px;text-align:center">Для работы записи включите JavaScript.</div></noscript>

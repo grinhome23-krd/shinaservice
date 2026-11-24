@@ -69,7 +69,7 @@ function defaultDB(){
       {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
     ],
     shiftStart:todayISO(),shiftFirst:1,staffSeen:{},
-    smsChannel:'sms',smsWebhook:'',
+    smsChannel:'sms',smsWebhook:'',ipTitle:'',
     stats:[{v:'12',t:'лет работы'},{v:'40 000+',t:'обслуженных авто'},{v:'4',t:'поста шиномонтажа'},{v:'4.9 ★',t:'рейтинг клиентов'}]};
   const t=todayISO();
   const mk=(day,time,st,name,phone,car,plate,ids,com,src)=>({
@@ -93,6 +93,13 @@ function defaultDB(){
 function shiftEmpFor(dateISO,settings){
   let emps=(settings.employees||[]).filter(e=>e.active);
   if(!emps.length)return null;
+  /* гибкий график: приоритет у сотрудников, выбравших этот день недели себе */
+  const dow=new Date(dateISO+'T00:00:00').getDay();
+  const flex=emps.filter(e=>e.flex&&e.flex.on&&Array.isArray(e.flex.wd)&&e.flex.wd.includes(dow));
+  if(flex.length){
+    const ord=Math.floor(new Date(dateISO+'T00:00:00').getTime()/86400000);
+    return flex[((ord%flex.length)+flex.length)%flex.length];
+  }
   const fi=emps.findIndex(e=>e.id===Number(settings.shiftFirst));
   if(fi>0)emps.unshift(emps.splice(fi,1)[0]);
   const d1=new Date(settings.shiftStart+'T00:00:00');
@@ -107,7 +114,8 @@ function normalizeDB(d){
   d.settings.employees=d.settings.employees.map((e,i)=>({
     id:Number(e.id)||i+1,name:String(e.name||'Сотрудник '+(i+1)),
     pin:String(e.pin||String(1000+i*1111)),color:e.color||['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa'][i%5],
-    active:e.active!==false}));
+    active:e.active!==false,
+    flex:(e.flex&&e.flex.on)?{on:true,wd:(Array.isArray(e.flex.wd)?e.flex.wd:[]).map(Number).filter(n=>n>=0&&n<=6)}:{on:false,wd:[]}}));
   const ids=d.settings.employees.map(e=>e.id);
   if(!ids.includes(Number(d.settings.shiftFirst)))d.settings.shiftFirst=d.settings.employees[0].id;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d.settings.shiftStart||''))d.settings.shiftStart=def.settings.shiftStart;

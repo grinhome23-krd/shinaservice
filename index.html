@@ -285,6 +285,52 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
 .rev-row .nums{display:flex;gap:8px 24px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:13px;flex:1;min-width:200px}
 .rev-row .nums b{font-size:15px;color:var(--text)}
 .rev-row .nums .lbl{font-size:12px;color:var(--dim);display:block}
+/* итоговая строка выручки */
+.rev-row.total{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:6px}
+.tot-chip{font-weight:800;white-space:nowrap;padding:6px 12px;border-radius:10px;background:rgba(245,158,11,.14);color:var(--acc2);align-self:center}
+/* календарь сотрудника */
+.cal-nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cal-nav b{font-size:15px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.cal-hd{text-align:center;font-size:11.5px;color:var(--dim);font-weight:700;padding:2px 0}
+.cal-cell{background:var(--bg2);border:1.5px solid var(--line);border-radius:10px;min-height:64px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;text-align:left;font:inherit;color:var(--text)}
+.cal-cell.empty{background:transparent;border-color:transparent;cursor:default}
+.cal-cell.weekend{background:rgba(248,113,113,.07)}
+.cal-cell.today{border-color:var(--acc)}
+.cal-cell.sel{border-color:var(--acc2);background:rgba(245,158,11,.08)}
+.cal-cell .d{font-weight:700;font-size:13.5px}
+.cal-cell .cnt{font-size:11px;color:var(--acc2);font-weight:800}
+.cal-cell .loadbar{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:auto}
+.cal-cell .loadbar i{display:block;height:100%;background:var(--acc)}
+.tl-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.tl-row:first-child{border-top:none}
+.tl-row .tl-t{min-width:100px;color:var(--acc2);font-weight:700}
+.tl-row.done{opacity:.6}
+/* печать прайс-листа */
+#printSheet{display:none}
+@media print{
+  html,body{background:#fff!important}
+  body>*:not(#printSheet){display:none!important}
+  #printSheet{display:block!important;color:#111;font-family:'Times New Roman',Georgia,serif}
+  .ps-doc{max-width:190mm;margin:0 auto}
+  .ps-doc h1{text-align:center;font-size:22pt;margin:10mm 0 4mm;font-weight:700}
+  .ps-co{font-size:16pt;font-weight:700}
+  .ps-contacts{font-size:11pt;color:#333;margin-top:1mm}
+  .ps-table{width:100%;border-collapse:collapse;margin-top:6mm;font-size:12pt}
+  .ps-table th{border:1px solid #111;background:#f0f0f0;padding:3mm;text-align:left}
+  .ps-table td{border:1px solid #333;padding:2.6mm;vertical-align:top}
+  .ps-table .num{width:10mm;text-align:center}
+  .ps-table .dur{width:24mm;text-align:center;white-space:nowrap}
+  .ps-table .price{width:30mm;text-align:right;white-space:nowrap;font-weight:700}
+  .ps-table tr.cat td{background:#f7f7f7;font-weight:700}
+  .ps-note{font-size:10pt;color:#444;margin-top:4mm}
+  .ps-foot{margin-top:14mm;page-break-inside:avoid}
+  .ps-date{font-size:12pt;margin-bottom:10mm}
+  .ps-ip{font-size:12pt;margin-top:3mm;margin-bottom:6mm}
+  .ps-sign{display:flex;align-items:flex-end;justify-content:space-between;gap:8mm}
+  .ps-sign .ln{font-size:12pt}
+  .ps-stamp{width:34mm;height:34mm;border:2.5px solid #888;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#888;font-size:10pt;flex:none}
+}
 /* responsive */
 @media(max-width:860px){
   .nav{display:none}
@@ -302,6 +348,8 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
   .tb .inp{min-height:42px}
 }
 @media(max-width:640px){
+  .cal-cell{min-height:50px;padding:4px}
+  .cal-cell .cnt{display:none}
   .ring{display:none}
   .ft-grid{grid-template-columns:1fr;gap:20px;padding:32px 0 24px}
   .a-grid{grid-template-columns:1fr}
@@ -561,6 +609,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
     <div class="st-head" id="stHead"></div>
     <div class="st-stats" id="stStats"></div>
     <div class="chips st-filters" id="stFilters"></div>
+    <div id="stCal" style="margin-top:12px" hidden></div>
     <div id="stList" style="margin-top:12px"></div>
   </div>
 </div>
@@ -654,6 +703,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
     <section id="a-services" class="a-pane" hidden style="padding-bottom:40px">
       <div class="tb">
         <div class="spacer"></div>
+        <button class="btn btn-o btn-s" id="btnPrintPrice">🖨 Прайс-лист для печати</button>
         <button class="btn btn-p btn-s" id="btnAddSvc">+ Добавить услугу</button>
       </div>
       <div class="table-wrap">
@@ -714,6 +764,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
               <div class="full"><label class="lb req">Название</label><input class="inp" id="stName"></div>
               <div><label class="lb req">Телефон</label><input class="inp" id="stPhone"></div>
               <div><label class="lb req">Адрес</label><input class="inp" id="stAddr"></div>
+              <div class="full"><label class="lb">ИП / ФИО предпринимателя для документов</label><input class="inp" id="stIP" placeholder="ИП Иванов Иван Иванович"></div>
             </div>
             <button class="btn btn-p" id="stSave" style="margin-top:16px">Сохранить</button>
           </div>
@@ -738,7 +789,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
             <button class="btn btn-o btn-s" id="btnAddEmp" style="margin-top:12px">+ Добавить сотрудника</button>
             <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:14px">
               <h3 style="margin-bottom:8px">График смен</h3>
-              <p class="mut-sm">Активные сотрудники чередуются через день, начиная с даты старта: в первый день работает выбранный ниже сотрудник. Деактивированный сотрудник пропадает из ротации, его записи остаются.</p>
+              <p class="mut-sm">Активные сотрудники чередуются через день, начиная с даты старта: в первый день работает выбранный ниже сотрудник. Гибкий график (в карточке сотрудника) приоритетнее: в выбранные им дни недели смена закрепляется за ним. Деактивированный сотрудник пропадает из ротации, его записи остаются.</p>
               <div class="f-grid">
                 <div><label class="lb">Дата старта графика</label><input type="date" class="inp" id="shStart"></div>
                 <div><label class="lb">Работает в день старта</label><select class="inp" id="shFirst"></select></div>
@@ -778,6 +829,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
 </div>
 
 <div id="toasts"></div>
+<div id="printSheet"></div>
 <div class="modal" id="modal"><div class="modal-box" id="modalBox"></div></div>
 <noscript><div style="padding:20px;text-align:center">Для работы записи включите JavaScript.</div></noscript>
 <script>
@@ -851,7 +903,7 @@ function defaultDB(){
       {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
     ],
     shiftStart:todayISO(),shiftFirst:1,staffSeen:{},
-    smsChannel:'sms',smsWebhook:'',
+    smsChannel:'sms',smsWebhook:'',ipTitle:'',
     stats:[{v:'12',t:'лет работы'},{v:'40 000+',t:'обслуженных авто'},{v:'4',t:'поста шиномонтажа'},{v:'4.9 ★',t:'рейтинг клиентов'}]};
   const t=todayISO();
   const mk=(day,time,st,name,phone,car,plate,ids,com,src)=>({
@@ -875,6 +927,13 @@ function defaultDB(){
 function shiftEmpFor(dateISO,settings){
   let emps=(settings.employees||[]).filter(e=>e.active);
   if(!emps.length)return null;
+  /* гибкий график: приоритет у сотрудников, выбравших этот день недели себе */
+  const dow=new Date(dateISO+'T00:00:00').getDay();
+  const flex=emps.filter(e=>e.flex&&e.flex.on&&Array.isArray(e.flex.wd)&&e.flex.wd.includes(dow));
+  if(flex.length){
+    const ord=Math.floor(new Date(dateISO+'T00:00:00').getTime()/86400000);
+    return flex[((ord%flex.length)+flex.length)%flex.length];
+  }
   const fi=emps.findIndex(e=>e.id===Number(settings.shiftFirst));
   if(fi>0)emps.unshift(emps.splice(fi,1)[0]);
   const d1=new Date(settings.shiftStart+'T00:00:00');
@@ -889,7 +948,8 @@ function normalizeDB(d){
   d.settings.employees=d.settings.employees.map((e,i)=>({
     id:Number(e.id)||i+1,name:String(e.name||'Сотрудник '+(i+1)),
     pin:String(e.pin||String(1000+i*1111)),color:e.color||['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa'][i%5],
-    active:e.active!==false}));
+    active:e.active!==false,
+    flex:(e.flex&&e.flex.on)?{on:true,wd:(Array.isArray(e.flex.wd)?e.flex.wd:[]).map(Number).filter(n=>n>=0&&n<=6)}:{on:false,wd:[]}}));
   const ids=d.settings.employees.map(e=>e.id);
   if(!ids.includes(Number(d.settings.shiftFirst)))d.settings.shiftFirst=d.settings.employees[0].id;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d.settings.shiftStart||''))d.settings.shiftStart=def.settings.shiftStart;
@@ -1493,15 +1553,18 @@ function renderDash(){
   const eToday=empOn(t),eTm=empOn(tm);
   const shRow=(d,e)=>'<div class="trow"><div style="flex:1"><div>'+fmtDateHuman(d)+'</div><div class="sub">смена мастера</div></div>'+
     (e?empBadge(e.id):'<span class="st st-cancel">нет активных мастеров</span>')+'</div>';
+  const flexOn=DB.settings.employees.some(e=>e.active&&e.flex&&e.flex.on&&Array.isArray(e.flex.wd)&&e.flex.wd.length);
   $('#shiftInfo').innerHTML=shRow(t,eToday)+shRow(tm,eTm)+
-    '<p class="mut-sm" style="margin-top:10px">Мастера чередуются через день (Настройки → «Сотрудники и смены»). Записи автоматически закрепляются за мастером по дате визита.</p>';
-  $('#empRevList').innerHTML=empRevenueRows().map(r=>
-    '<div class="rev-row">'+empBadge(r.e.id)+
-    '<div class="nums">'+
-      '<span><span class="lbl">Факт за месяц (выполнено)</span><b>'+fmtMoney(r.mRev)+'</b> · '+r.mCnt+' заказ.</span>'+
-      '<span><span class="lbl">Факт всего</span><b>'+fmtMoney(r.allRev)+'</b> · '+r.allCnt+' заказ.</span>'+
-      '<span><span class="lbl">Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(r.expRev)+'</b> · '+r.expCnt+' запис.</span>'+
-    '</div></div>').join('')||'<div class="empty">Сотрудников нет</div>';
+    '<p class="mut-sm" style="margin-top:10px">'+(flexOn?'Включён гибкий график: в выбранные сотрудником дни смена закреплена за ним, в остальные — общее чередование.':'Мастера чередуются через день.')+' Подробнее: Настройки → «Сотрудники и смены». Записи автоматически закрепляются за мастером по дате визита.</p>';
+  const rows=empRevenueRows();
+  const tot=rows.reduce((a,r)=>({mRev:a.mRev+r.mRev,mCnt:a.mCnt+r.mCnt,allRev:a.allRev+r.allRev,allCnt:a.allCnt+r.allCnt,expRev:a.expRev+r.expRev,expCnt:a.expCnt+r.expCnt}),
+    {mRev:0,mCnt:0,allRev:0,allCnt:0,expRev:0,expCnt:0});
+  const nums=r=>'<div class="nums">'+
+    '<span><span class="lbl">Факт за месяц (выполнено)</span><b>'+fmtMoney(r.mRev)+'</b> · '+r.mCnt+' заказ.</span>'+
+    '<span><span class="lbl">Факт всего</span><b>'+fmtMoney(r.allRev)+'</b> · '+r.allCnt+' заказ.</span>'+
+    '<span><span class="lbl">Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(r.expRev)+'</b> · '+r.expCnt+' запис.</span></div>';
+  $('#empRevList').innerHTML='<div class="rev-row total"><span class="tot-chip">Итого · все мастера</span>'+nums(tot)+'</div>'+
+    rows.map(r=>'<div class="rev-row">'+empBadge(r.e.id)+nums(r)+'</div>').join('')||'<div class="empty">Сотрудников нет</div>';
 }
 function empRevenueRows(){
   const t=todayISO(),mr=monthRange();
@@ -1787,6 +1850,40 @@ function exportCsv(){
 }
 $('#btnCsv').addEventListener('click',exportCsv);
 
+/* --- печатный прайс-лист услуг (подпись ИП, дата, место печати) --- */
+function openPrintPrice(){
+  const s=DB.settings;
+  const svc=DB.services.filter(x=>x.active);
+  if(!svc.length){toast('Нет активных услуг для печати','err');return;}
+  const cats=[];svc.forEach(x=>{const c=x.cat||'Услуги';if(!cats.includes(c))cats.push(c);});
+  let n=0;
+  const rowHtml=rows=>rows.map(x=>{n++;
+    return '<tr><td class="num">'+n+'</td><td><b>'+esc(x.name)+'</b>'+(x.desc?'<br><span style="font-size:10pt;color:#444">'+esc(x.desc)+'</span>':'')+'</td>'+
+      '<td class="dur">≈ '+x.dur+' мин</td><td class="price">'+(x.price===0?'бесплатно':fmtMoney(x.price))+'</td></tr>';}).join('');
+  const body=cats.map(c=>'<tr class="cat"><td colspan="4">'+esc(c)+'</td></tr>'+rowHtml(svc.filter(x=>(x.cat||'Услуги')===c))).join('');
+  const y=new Date().getFullYear();
+  const ip=(s.ipTitle||'').trim();
+  $('#printSheet').innerHTML=
+    '<div class="ps-doc">'+
+      '<div class="ps-co">'+esc(s.companyName)+'</div>'+
+      '<div class="ps-contacts">'+esc(s.address)+' · тел. '+esc(s.phone)+'</div>'+
+      '<h1>Прайс-лист на услуги</h1>'+
+      '<table class="ps-table"><thead><tr><th class="num">№</th><th>Наименование услуги</th><th class="dur">Время</th><th class="price">Цена</th></tr></thead><tbody>'+body+'</tbody></table>'+
+      '<div class="ps-note">Цены указаны в рублях. Точную стоимость и время работ уточняйте по телефону '+esc(s.phone)+'.</div>'+
+      '<div class="ps-foot">'+
+        '<div class="ps-date">Дата составления: «___» ____________ '+y+' г.</div>'+
+        (ip?'<div class="ps-ip">Индивидуальный предприниматель: <b>'+esc(ip)+'</b></div>':'')+
+        '<div class="ps-sign">'+
+          '<div class="ln">ИП ______________________ /____________________/<br>'+
+          '<span style="font-size:9pt;color:#555">подпись, Ф.И.О.</span></div>'+
+          '<div class="ps-stamp">М.П.</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  window.print();
+}
+$('#btnPrintPrice').addEventListener('click',openPrintPrice);
+
 /* --- услуги --- */
 function renderServicesAdmin(){
   $('#svcBody').innerHTML=DB.services.map(s=>
@@ -1897,6 +1994,7 @@ function renderSettings(){
   $('#stName').value=s.companyName;
   $('#stPhone').value=s.phone;
   $('#stAddr').value=s.address;
+  $('#stIP').value=s.ipTitle||'';
   $('#stSmsCh').value=s.smsChannel==='max'?'max':'sms';
   $('#stSmsUrl').value=s.smsWebhook||'';
   $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
@@ -1941,9 +2039,14 @@ function renderEmployees(){
       empBadge(e.id)+
       '<div class="nm">'+esc(e.name)+(e.active?'':' <span class="st st-cancel">неактивен</span>')+'</div>'+
       '<span class="pin">ПИН: '+esc(e.pin)+'</span>'+
+      (e.flex&&e.flex.on&&e.flex.wd.length?'<span class="pin">гибкий график: '+fmtFlexWd(e.flex.wd)+'</span>':'')+
       '<label class="wday"><input type="checkbox" data-empact="'+e.id+'"'+(e.active?' checked':'')+'><span>'+(e.active?'В смене':'Вне смены')+'</span></label>'+
       '<button class="btn btn-o btn-s" data-empedit="'+e.id+'" title="Изменить">✎</button>'+
     '</div>').join('')||'<span style="color:var(--dim);font-size:13px">Сотрудников нет</span>';
+}
+function fmtFlexWd(wd){
+  const L={1:'Пн',2:'Вт',3:'Ср',4:'Чт',5:'Пт',6:'Сб',0:'Вс'};
+  return wd.slice().sort((a,b)=>((a+6)%7)-((b+6)%7)).map(d=>L[d]).join(', ');
 }
 function renderShiftCfg(){
   const s=DB.settings;
@@ -1969,6 +2072,9 @@ $('#empList').addEventListener('click',e=>{
 $('#btnAddEmp').addEventListener('click',()=>openEmpModal(null));
 function openEmpModal(id){
   const emp=id?empById(id):null;
+  const WD=[['Пн',1],['Вт',2],['Ср',3],['Чт',4],['Пт',5],['Сб',6],['Вс',0]];
+  const flexOn=emp&&emp.flex&&emp.flex.on&&Array.isArray(emp.flex.wd)&&emp.flex.wd.length;
+  const wdSel=d=>flexOn&&emp.flex.wd.includes(d);
   openModal(
     '<div class="m-head"><h3>'+(id?'Изменить сотрудника':'Новый сотрудник')+'</h3><button class="m-x" data-mx>×</button></div>'+
     '<div class="m-body"><div class="f-grid">'+
@@ -1978,15 +2084,27 @@ function openEmpModal(id){
         ['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa','#f87171'].map(c=>'<option value="'+c+'"'+(emp&&emp.color===c?' selected':'')+'>'+c+'</option>').join('')+
       '</select></div>'+
       '<div class="full"><label class="wday" style="margin-top:6px"><input type="checkbox" id="emAct"'+(!emp||emp.active?' checked':'')+'><span>Участвует в графике смен</span></label></div>'+
+      '<div class="full"><label class="wday"><input type="checkbox" id="emFlex"'+(flexOn?' checked':'')+'><span>⏱ Гибкий график — закрепить свои дни недели</span></label></div>'+
+      '<div class="full" id="emFlexWd"'+(flexOn?'':' style="display:none"')+'>'+
+        '<label class="lb">Рабочие дни сотрудника</label>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">'+WD.map(x=>
+          '<label class="chipbtn'+(wdSel(x[1])?' on':'')+'"><input type="checkbox" data-emwd="'+x[1]+'"'+(wdSel(x[1])?' checked':'')+'>'+x[0]+'</label>').join('')+'</div>'+
+        '<p class="mut-sm" style="margin-top:6px">В выбранные дни недели смена закреплена за этим сотрудником (если таких несколько — они чередуются по датам). В остальные дни работает общая ротация «через день».</p>'+
+      '</div>'+
     '</div></div>'+
     '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="emSave">Сохранить</button></div>');
+  $('#emFlex').addEventListener('change',()=>{$('#emFlexWd').style.display=$('#emFlex').checked?'':'none';});
+  $$('#modalBox [data-emwd]').forEach(ch=>ch.addEventListener('change',()=>{ch.closest('.chipbtn').classList.toggle('on',ch.checked);}));
   $('#emSave').onclick=()=>{
     const name=$('#emName').value.trim();
     const pin=$('#emPin').value.trim();
     if(name.length<2){toast('Укажите имя','err');return;}
     if(!/^\d{4,8}$/.test(pin)){toast('ПИН — от 4 до 8 цифр','err');return;}
     if(DB.settings.employees.some(x=>x.pin===pin&&(!emp||x.id!==emp.id))){toast('Такой ПИН уже есть у другого сотрудника','err');return;}
-    const data={name,pin,color:$('#emColor').value,active:$('#emAct').checked};
+    const flexOn2=$('#emFlex').checked;
+    const wd=$$('#modalBox [data-emwd]:checked').map(ch=>Number(ch.dataset.emwd));
+    if(flexOn2&&!wd.length){toast('Отметьте хотя бы один рабочий день гибкого графика','err');return;}
+    const data={name,pin,color:$('#emColor').value,active:$('#emAct').checked,flex:{on:flexOn2,wd:flexOn2?wd:[]}};
     if(emp)Object.assign(emp,data);
     else{
       const nid=DB.settings.employees.reduce((m,x)=>Math.max(m,x.id),0)+1;
@@ -2015,6 +2133,7 @@ $('#stSave').addEventListener('click',()=>{
   if(name.length<2){toast('Укажите название','err');return;}
   if(!phone){toast('Укажите телефон','err');return;}
   DB.settings.companyName=name;DB.settings.phone=phone;DB.settings.address=addr;
+  DB.settings.ipTitle=$('#stIP').value.trim();
   save();applySettings();toast('Данные автосервиса сохранены');
 });
 $('#pwSave').addEventListener('click',()=>{
@@ -2064,7 +2183,7 @@ function showLogin(){hideViews();$('#loginView').hidden=false;setTimeout(()=>$('
 function logout(){SS.st.removeItem('sm_admin');showSite();toast('Вы вышли из админки');}
 
 /* ================= ПАНЕЛЬ СОТРУДНИКА ================= */
-const S={empId:null,filter:'today'};
+const S={empId:null,filter:'today',view:'list',calMonth:null,calDay:null};
 const isStaff=()=>{const id=SS.st.getItem('sm_staff');const e=id&&empById(id);return !!(e&&e.active);};
 function showStaffLogin(){
   hideViews();$('#staffLogin').hidden=false;
@@ -2104,6 +2223,8 @@ function renderStaff(){
     '<div><h2>'+esc(e.name)+' · ваши записи</h2>'+
     '<span class="st-shift'+(onShift?' on':'')+'">'+(onShift?'🔧 Сегодня ваша смена':'😴 Сегодня выходной · работает '+(eToday?esc(eToday.name):'—'))+'</span></div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+      '<button class="btn '+(S.view==='cal'?'btn-o':'btn-p')+' btn-s" data-stview="list">📋 Список</button>'+
+      '<button class="btn '+(S.view==='cal'?'btn-p':'btn-o')+' btn-s" data-stview="cal">📅 Календарь</button>'+
       '<button class="btn '+(S.filter==='notif'?'btn-p':'btn-o')+' btn-s" data-stact="bell" title="Записи, которые вы ещё не видели">🔔 Новые'+(fresh.length?' <span class="bell-badge">'+fresh.length+'</span>':'')+'</button>'+
       '<button class="btn btn-p btn-s" data-stact="add">+ Записать клиента</button>'+
     '</div>';
@@ -2112,6 +2233,11 @@ function renderStaff(){
     '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(revDone(e.id,from,to))+'</b><i>выполнено заказов: '+cntDone(e.id,from,to)+'</i></div>';
   $('#stStats').innerHTML=fact('Факт за день',t,t)+fact('Факт за неделю',wr.from,wr.to)+fact('Факт за месяц',mr.from,mr.to)+
     '<div class="st-stat"><span>Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(expSum(e.id))+'</b><i>записей: '+expCnt(e.id)+'</i></div>';
+  const cal=S.view==='cal';
+  $('#stFilters').hidden=cal;
+  $('#stList').hidden=cal;
+  $('#stCal').hidden=!cal;
+  if(cal)renderStaffCal(e);
   const F=[['today','Сегодня'],['upcoming','Будущие'],['new','Новые'],['notif','🔔 Непросмотренные'],['done','Выполненные'],['all','Все']];
   $('#stFilters').innerHTML=F.map(f=>'<button class="chipbtn'+(S.filter===f[0]?' on':'')+'" data-stf="'+f[0]+'">'+f[1]+'</button>').join('');
   const nowM=new Date().getHours()*60+new Date().getMinutes();
@@ -2140,6 +2266,66 @@ function renderStaff(){
     '</div>';
   }).join(''):'<div class="empty">Записей в этом фильтре нет</div>';
 }
+/* --- календарный вид: месяц с загруженностью и таймлайн дня --- */
+function renderStaffCal(e){
+  const s=DB.settings;
+  const [y,m]=S.calMonth.split('-').map(Number);
+  const first=new Date(y,m-1,1);
+  const monName=(first.toLocaleDateString('ru-RU',{month:'long',year:'numeric'}).charAt(0).toUpperCase())+first.toLocaleDateString('ru-RU',{month:'long',year:'numeric'}).slice(1);
+  const startDow=(first.getDay()+6)%7;
+  const dim=new Date(y,m,0).getDate();
+  const cap=Math.max(60,toMin(s.workEnd)-toMin(s.workStart));
+  const durOf=b=>b.services.reduce((a,x)=>{const sv=svcById(x.id);return a+(sv?sv.dur:30);},0);
+  let cells='';
+  for(let i=0;i<startDow;i++)cells+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const iso=y+'-'+pad2(m)+'-'+pad2(d);
+    const items=DB.bookings.filter(b=>b.employeeId===e.id&&b.date===iso&&b.status!=='cancelled');
+    const load=Math.min(100,Math.round(items.reduce((a,b)=>a+durOf(b),0)/cap*100));
+    const wdow=(new Date(iso+'T00:00:00').getDay()+6)%7;
+    cells+='<button type="button" class="cal-cell'+(wdow>=5?' weekend':'')+(iso===todayISO()?' today':'')+(iso===S.calDay?' sel':'')+'" data-calday="'+iso+'">'+
+      '<span class="d">'+d+'</span>'+
+      (items.length?'<span class="cnt">'+items.length+' запис.</span>':'<span class="cnt" style="color:var(--dim)">свободно</span>')+
+      '<span class="loadbar"><i style="width:'+load+'%"></i></span>'+
+    '</button>';
+  }
+  $('#stCal').innerHTML=
+    '<div class="cal-nav">'+
+      '<button class="btn btn-o btn-s" data-calnav="-1">‹</button>'+
+      '<b>'+monName+'</b>'+
+      '<button class="btn btn-o btn-s" data-calnav="1">›</button>'+
+      '<button class="btn btn-o btn-s" data-caltoday="1">Сегодня</button>'+
+      '<span class="sub" style="margin-left:auto">полоска — занятость рабочего дня ('+s.workStart+'–'+s.workEnd+')</span>'+
+    '</div>'+
+    '<div class="cal-grid">'+['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(x=>'<div class="cal-hd">'+x+'</div>').join('')+cells+'</div>'+
+    (S.calDay?calDayTimeline(e,S.calDay):'<div class="sub" style="margin-top:12px">Выберите день — покажу записи по времени</div>');
+}
+function calDayTimeline(e,iso){
+  const s=DB.settings;
+  const items=DB.bookings.filter(b=>b.employeeId===e.id&&b.date===iso&&b.status!=='cancelled').sort((a,b)=>a.time.localeCompare(b.time));
+  const rows=items.map(b=>{
+    const endM=Math.min(toMin(s.workEnd),toMin(b.time)+b.services.reduce((a,x)=>{const sv=svcById(x.id);return a+(sv?sv.dur:30);},0));
+    return '<div class="tl-row'+(b.status==='done'?' done':'')+'"><b class="tl-t">'+b.time+'–'+pad2(Math.floor(endM/60))+':'+pad2(endM%60)+'</b>'+
+      '<div style="flex:1;min-width:0"><div>'+esc(b.name)+(b.car?' <span class="sub">· '+esc(b.car)+'</span>':'')+'</div>'+
+      '<div class="sub">'+esc(b.services.map(x=>x.name).join(' + '))+' · '+fmtMoney(b.total)+'</div></div>'+
+      stBadge(b.status)+'</div>';
+  }).join('');
+  return '<div style="margin-top:14px"><h3>Загруженность: '+fmtDateHuman(iso)+'</h3>'+
+    (rows||'<div class="empty">Записей нет — день свободен</div>')+'</div>';
+}
+$('#stCal').addEventListener('click',e=>{
+  const nav=e.target.closest('[data-calnav]');
+  if(nav){
+    const [y,m]=S.calMonth.split('-').map(Number);
+    const d=new Date(y,m-1+Number(nav.dataset.calnav),1);
+    S.calMonth=d.getFullYear()+'-'+pad2(d.getMonth()+1);S.calDay=null;
+    renderStaff();return;
+  }
+  const td=e.target.closest('[data-caltoday]');
+  if(td){S.calMonth=todayISO().slice(0,7);S.calDay=todayISO();renderStaff();return;}
+  const cd=e.target.closest('[data-calday]');
+  if(cd){S.calDay=cd.dataset.calday;renderStaff();}
+});
 $('#stFilters').addEventListener('click',e=>{
   const b=e.target.closest('[data-stf]');if(!b)return;
   S.filter=b.dataset.stf;
@@ -2147,6 +2333,12 @@ $('#stFilters').addEventListener('click',e=>{
   renderStaff();
 });
 $('#stHead').addEventListener('click',e=>{
+  const v=e.target.closest('[data-stview]');
+  if(v){
+    S.view=v.dataset.stview;
+    if(S.view==='cal'){if(!S.calMonth)S.calMonth=todayISO().slice(0,7);if(!S.calDay)S.calDay=todayISO();}
+    renderStaff();return;
+  }
   const b=e.target.closest('[data-stact]');if(!b)return;
   if(b.dataset.stact==='add')openManualBooking({staff:true});
   if(b.dataset.stact==='bell'){
