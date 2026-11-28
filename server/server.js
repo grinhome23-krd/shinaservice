@@ -65,7 +65,7 @@ function redact(d) {
       workDays: s.workDays, workStart: s.workStart, workEnd: s.workEnd,
       interval: s.interval, posts: s.posts, blockedDates: s.blockedDates || [],
       stats: s.stats || [], shiftStart: s.shiftStart, shiftFirst: s.shiftFirst,
-      shiftOverrides: s.shiftOverrides || {}, smsChannel: s.smsChannel,
+      shiftOverrides: s.shiftOverrides || {}, smsChannel: s.smsChannel, panelSlug: s.panelSlug || 'panel',
       employees: (s.employees || []).map(e => ({
         id: e.id, name: e.name, color: e.color, active: e.active, flex: e.flex
       }))
@@ -85,6 +85,41 @@ function verifyCode(d, code) {
   if (c === d.settings.adminPass) return 'admin';
   const e = (d.settings.employees || []).find(e => e.active && e.pin === c);
   return e ? e.id : null;
+}
+
+/* --- авторизация по телефону + SMS/MAX-код (клиенты и персонал) --- */
+const crypto = require('node:crypto');
+const authCodes = new Map(); // digits -> {code, exp, tries, role|null}
+const tokens = new Map();    // token -> {role, exp}
+const digitsOf = p => String(p || '').replace(/\D/g, '');
+const TOKEN_TTL = 7 * 864e5;
+
+function sendAuthCode(s, phone, text) {
+  const url = String(s.smsWebhook || '').trim();
+  if (!url) return Promise.resolve(false);
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel: s.smsChannel === 'max' ? 'max' : 'sms', phone, text, code: '', kind: 'auth' })
+  }).then(r => r.ok).catch(() => false);
+}
+function checkToken(t) {
+  const tk = tokens.get(String(t || ''));
+  if (tk && tk.exp > Date.now() && tk.role !== 'client') return tk.role;
+  return null;
+}
+function panelRole(d, phone) {
+  const ph = digitsOf(phone);
+  if (digitsOf(d.settings.adminPhone) === ph) return 'admin';
+  const e = (d.settings.employees || []).find(e => digitsOf(e.phone) === ph && e.active);
+  return e ? String(e.id) : null;
+}
+/* полный доступ: ПИН/пароль или токен после входа по телефону */
+function fullRole(st, u, body) {
+  const bodyTok = body && body.token ? body.token : null;
+  const role = checkToken(bodyTok) || checkToken(u.searchParams.get('token'));
+  if (role) return role;
+  return verifyCode(st.db, body && body.code ? body.code : u.searchParams.get('code'));
 }
 
 const STS = ['new', 'confirmed', 'done', 'cancelled'];
@@ -149,6 +184,38 @@ const server = http.createServer(async (req, res) => {
         .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
       return send(res, 200, { ok: true, bookings });
     }
+    if (p === '/api/auth/request' && req.method === 'POST') {
+      if (!st) return send(res, 409, { ok: false, err: 'empty' });
+      const body = JSON.parse(await readBody(req) || '{}');
+      const ph = digitsOf(body.phone);
+      if (ph.length !== 11) return send(res, 400, { ok: false, err: 'badphone' });
+      const purpose = body.purpose === 'panel' ? 'panel' : 'client';
+      let role = null;
+      if (purpose === 'panel') {
+        role = panelRole(st.db, ph);
+        if (!role) return send(res, 403, { ok: false, err: 'notstaff' });
+      }
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      authCodes.set(ph, { code, exp: Date.now() + 5 * 60000, tries: 0, role });
+      const delivered = await sendAuthCode(st.db.settings, ph,
+        st.db.settings.companyName + ': код входа ' + code + '. Никому его не сообщайте.');
+      if (delivered) console.log('Код входа отправлен:', ph.slice(0, 4) + '***' + ph.slice(-2));
+      return send(res, 200, { ok: true, delivered, demo: !delivered, role, code: delivered ? '' : code });
+    }
+    if (p === '/api/auth/verify' && req.method === 'POST') {
+      const body = JSON.parse(await readBody(req) || '{}');
+      const ph = digitsOf(body.phone);
+      const c = authCodes.get(ph);
+      if (!c || c.exp < Date.now()) return send(res, 200, { ok: false, err: 'nocode' });
+      if (c.tries >= 5) { authCodes.delete(ph); return send(res, 200, { ok: false, err: 'tries' }); }
+      if (String(body.code || '').trim() !== c.code) { c.tries++; return send(res, 200, { ok: false, err: 'wrong' }); }
+      authCodes.delete(ph);
+      const role = c.role || 'client';
+      const token = crypto.randomUUID();
+      tokens.set(token, { role, exp: Date.now() + TOKEN_TTL });
+      if (role !== 'client') console.log('Вход по телефону:', ph.slice(0, 4) + '***' + ph.slice(-2), '→', role === 'admin' ? 'админ' : 'сотрудник');
+      return send(res, 200, { ok: true, token, role });
+    }
     if (p === '/api/bookings' && req.method === 'POST') {
       if (!st) return send(res, 409, { ok: false, err: 'empty' });
       const body = JSON.parse(await readBody(req) || '{}');
@@ -187,17 +254,17 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, updated, db: redact(st.db) });
     }
 
-    /* --- доступ сотрудника/админа: полный дамп БД по коду доступа --- */
+    /* --- доступ сотрудника/админа: полный дамп БД по ПИН/паролю или токену входа --- */
     if (p === '/api/db' && req.method === 'GET') {
       if (!st) return send(res, 200, { ok: true, empty: true });
-      const role = verifyCode(st.db, u.searchParams.get('code'));
+      const role = fullRole(st, u, null);
       if (!role) return send(res, 403, { ok: false, err: 'badcode' });
       return send(res, 200, { ok: true, updated: st.updated, db: st.db, role });
     }
     if (p === '/api/db' && req.method === 'POST') {
       if (!st) return send(res, 409, { ok: false, err: 'empty' });
       const body = JSON.parse(await readBody(req) || '{}');
-      const role = verifyCode(st.db, body.code);
+      const role = fullRole(st, u, body);
       if (!role) return send(res, 403, { ok: false, err: 'badcode' });
       if (!body.db || !body.db.settings || !Array.isArray(body.db.bookings))
         return send(res, 400, { ok: false, err: 'bad' });

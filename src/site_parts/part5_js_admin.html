@@ -540,6 +540,9 @@ function renderSettings(){
   $('#stReportEmail').value=s.reportEmail||'';
   $('#stSmsCh').value=s.smsChannel==='max'?'max':'sms';
   $('#stSmsUrl').value=s.smsWebhook||'';
+  $('#adPhone').value=s.adminPhone||'';
+  $('#adSlug').value=s.panelSlug||'panel';
+  $('#adSlugPrev').textContent='#'+panelSlug();
   $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
   renderEmployees();
   renderShiftCfg();
@@ -582,6 +585,7 @@ function renderEmployees(){
       empBadge(e.id)+
       '<div class="nm">'+esc(e.name)+(e.active?'':' <span class="st st-cancel">неактивен</span>')+'</div>'+
       '<span class="pin">ПИН: '+esc(e.pin)+'</span>'+
+      '<span class="pin">'+(e.phone?'📱 '+esc(e.phone):'📱 телефон не задан')+'</span>'+
       (e.flex&&e.flex.on&&e.flex.wd.length?'<span class="pin">гибкий график: '+fmtFlexWd(e.flex.wd)+'</span>':'')+
       '<label class="wday"><input type="checkbox" data-empact="'+e.id+'"'+(e.active?' checked':'')+'><span>'+(e.active?'В смене':'Вне смены')+'</span></label>'+
       '<button class="btn btn-o btn-s" data-empedit="'+e.id+'" title="Изменить">✎</button>'+
@@ -716,6 +720,7 @@ function openEmpModal(id){
       '<div><label class="lb">Цвет метки</label><select id="emColor" class="inp">'+
         ['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa','#f87171'].map(c=>'<option value="'+c+'"'+(emp&&emp.color===c?' selected':'')+'>'+c+'</option>').join('')+
       '</select></div>'+
+      '<div class="full"><label class="lb">Телефон для входа по коду (SMS или MAX)</label><input id="emPhone" class="inp" inputmode="tel" value="'+(emp?esc(emp.phone||''):'')+'" placeholder="+7 (___) ___-__-__"><p class="mut-sm" style="margin:4px 0 0">Сотрудник входит по этому номеру и SMS-коду на скрытой ссылке панели. Можно оставить пустым — тогда вход только по ПИН-коду.</p></div>'+
       '<div class="full"><label class="wday" style="margin-top:6px"><input type="checkbox" id="emAct"'+(!emp||emp.active?' checked':'')+'><span>Участвует в графике смен</span></label></div>'+
       '<div class="full"><label class="wday"><input type="checkbox" id="emFlex"'+(flexOn?' checked':'')+'><span>⏱ Гибкий график — закрепить свои дни недели</span></label></div>'+
       '<div class="full" id="emFlexWd"'+(flexOn?'':' style="display:none"')+'>'+
@@ -734,10 +739,14 @@ function openEmpModal(id){
     if(name.length<2){toast('Укажите имя','err');return;}
     if(!/^\d{4,8}$/.test(pin)){toast('ПИН — от 4 до 8 цифр','err');return;}
     if(DB.settings.employees.some(x=>x.pin===pin&&(!emp||x.id!==emp.id))){toast('Такой ПИН уже есть у другого сотрудника','err');return;}
+    const phoneRaw=$('#emPhone').value.trim();
+    if(phoneRaw&&!phoneOk(phoneRaw)){toast('Телефон сотрудника некорректен','err');return;}
+    if(phoneRaw&&normDigits(phoneRaw)===normDigits(DB.settings.adminPhone||'')){toast('Этот телефон уже назначен администратору','err');return;}
+    if(phoneRaw&&DB.settings.employees.some(x=>String(x.phone||'').replace(/\D/g,'')===normDigits(phoneRaw)&&(!emp||x.id!==emp.id))){toast('Этот телефон уже у другого сотрудника','err');return;}
     const flexOn2=$('#emFlex').checked;
     const wd=$$('#modalBox [data-emwd]:checked').map(ch=>Number(ch.dataset.emwd));
     if(flexOn2&&!wd.length){toast('Отметьте хотя бы один рабочий день гибкого графика','err');return;}
-    const data={name,pin,color:$('#emColor').value,active:$('#emAct').checked,flex:{on:flexOn2,wd:flexOn2?wd:[]}};
+    const data={name,pin,phone:phoneRaw,color:$('#emColor').value,active:$('#emAct').checked,flex:{on:flexOn2,wd:flexOn2?wd:[]}};
     if(emp)Object.assign(emp,data);
     else{
       const nid=DB.settings.employees.reduce((m,x)=>Math.max(m,x.id),0)+1;
@@ -782,6 +791,20 @@ $('#pwSave').addEventListener('click',()=>{
   $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
   toast('Пароль изменён');
 });
+/* --- вход персонала: телефон администратора и секретная ссылка панели --- */
+$('#adCfgSave').addEventListener('click',()=>{
+  const ph=$('#adPhone').value.trim();
+  if(ph&&!phoneOk(ph)){toast('Введите корректный телефон администратора','err');return;}
+  if(ph&&DB.settings.employees.some(e=>String(e.phone||'').replace(/\D/g,'')===normDigits(ph))){toast('Этот телефон уже привязан к сотруднику','err');return;}
+  const slug=String($('#adSlug').value||'panel').replace(/[^a-zA-Z0-9-]/g,'')||'panel';
+  DB.settings.adminPhone=ph;
+  DB.settings.panelSlug=slug;
+  save();
+  $('#adSlugPrev').textContent='#'+slug;
+  $('#pnlLink').textContent='#'+slug;
+  $('#adSlug').value=slug;
+  toast('Сохранено. Ссылка панели: '+location.pathname+'#'+slug);
+});
 $('#btnExpJson').addEventListener('click',()=>{
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='shinaservice_backup_'+todayISO()+'.json';
@@ -815,8 +838,8 @@ $('#btnReset').addEventListener('click',()=>{
 function hideViews(){['#site','#loginView','#admin','#staff'].forEach(s=>{$(s).hidden=true;});}
 function enterAdmin(msg){hideViews();$('#admin').hidden=false;window.scrollTo(0,0);renderAdmin();if(msg)toast('Добро пожаловать!');}
 function showSite(){hideViews();$('#site').hidden=false;}
-function showLogin(){hideViews();$('#loginView').hidden=false;setTimeout(()=>$('#loginCode').focus(),60);}
-function logout(){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_code');showSite();toast('Вы вышли из админки');}
+function showLogin(){hideViews();$('#loginView').hidden=false;$('#pnlLink').textContent='#'+panelSlug();$('#pnlCodeWrap').hidden=true;$('#pnlSend').textContent='Получить код';$('#pnlErr').style.display='none';setTimeout(()=>$('#pnlPhone').focus(),60);}
+function logout(){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_code');SS.st.removeItem('sm_token');showSite();toast('Вы вышли из админки');}
 
 /* ================= ПАНЕЛЬ СОТРУДНИКА ================= */
 const S={empId:null,filter:'today',view:'list',calMonth:null,calDay:null};
@@ -1092,7 +1115,64 @@ $('#stList').addEventListener('click',e=>{
   if(cn){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> ('+esc(b.name)+') на '+fmtDateHuman(b.date)+', '+b.time+' будет отменена, клиент получит уведомление.','Отменить',()=>{
     b.status='cancelled';notifyClient(b,'cancelled');save();renderStaff();toast('Запись отменена · клиент уведомлён');});}
 });
-/* --- единая точка входа: ПИН сотрудника или пароль администратора --- */
+/* --- вход персонала (скрытая ссылка #<slug>): телефон + код, либо ПИН/пароль --- */
+function panelSlug(){return String(DB.settings.panelSlug||'panel').replace(/[^a-zA-Z0-9-]/g,'')||'panel';}
+function routeHash(){
+  const h=decodeURIComponent(location.hash.replace(/^#/,'')).toLowerCase();
+  if(!h||h!==panelSlug().toLowerCase())return;
+  if(isAdmin())enterAdmin(false);
+  else if(isStaff())enterStaff(false);
+  else showLogin();
+}
+window.addEventListener('hashchange',routeHash);
+function pnlSend(){
+  const ph=$('#pnlPhone').value.trim();
+  const errEl=$('#pnlErr');
+  errEl.style.display='none';
+  if(!phoneOk(ph)){errEl.textContent='Введите корректный номер телефона';errEl.style.display='block';return;}
+  /* локальный режим: сразу проверяем, что телефон привязан к персоналу */
+  if(!SRV.mode&&roleByPhoneLocal(ph)==='client'){
+    errEl.textContent='Этот номер не привязан к сотруднику или администратору';
+    errEl.style.display='block';
+    return;
+  }
+  const btn=$('#pnlSend');btn.disabled=true;
+  authCodeSend(ph,'panel',r=>{
+    btn.disabled=false;
+    if(!r.ok){
+      errEl.textContent={notstaff:'Этот номер не привязан к сотруднику или администратору',net:'Сервер недоступен — попробуйте позже'}[r.err]||'Не удалось отправить код — попробуйте позже';
+      errEl.style.display='block';
+      return;
+    }
+    MYC={phone:ph,code:r.code||'',exp:Date.now()+5*60000,role:r.role||null};
+    $('#pnlDemo').style.display=r.demo?'':'none';
+    $('#pnlDemo').textContent='Шлюз уведомлений не настроен — демо-режим: ваш код входа '+r.code;
+    $('#pnlCodeWrap').hidden=false;
+    $('#pnlSend').textContent='Отправить код ещё раз';
+    $('#pnlCode').value='';
+    setTimeout(()=>$('#pnlCode').focus(),60);
+  });
+}
+function pnlVerify(){
+  const errEl=$('#pnlErr');
+  errEl.style.display='none';
+  const code=$('#pnlCode').value.trim();
+  if(!/^\d{6}$/.test(code)){errEl.textContent='Код состоит из 6 цифр';errEl.style.display='block';return;}
+  authCodeVerify(MYC.phone,code,r=>{
+    if(!r.ok){
+      errEl.textContent={nocode:'Срок действия кода истёк — отправьте новый',wrong:'Неверный код — попробуйте ещё раз',tries:'Слишком много попыток — отправьте код заново',net:'Сервер недоступен'}[r.err]||'Не удалось проверить код';
+      errEl.style.display='block';
+      return;
+    }
+    if(!r.role||r.role==='client'){errEl.textContent='Этот номер не привязан к сотруднику или администратору';errEl.style.display='block';return;}
+    SS.st.removeItem('sm_code');
+    if(SRV.mode&&r.token){SRV.authed='t:'+r.token;SS.st.setItem('sm_token',r.token);}
+    $('#pnlCode').value='';
+    ensureNotifPerm();
+    if(r.role==='admin'){SS.st.setItem('sm_admin','1');enterAdmin(true);}
+    else{SS.st.setItem('sm_staff',String(r.role));enterStaff(true);}
+  });
+}
 async function tryLogin(codeRaw){
   const code=(codeRaw||'').trim();
   const errEl=$('#loginErr');
@@ -1117,15 +1197,15 @@ async function tryLogin(codeRaw){
   if(code===DB.settings.adminPass){$('#loginCode').value='';errEl.style.display='none';SS.st.setItem('sm_admin','1');ensureNotifPerm();enterAdmin(true);return;}
   errEl.style.display='block';
 }
-$('#adminBtn').addEventListener('click',()=>{isAdmin()?enterAdmin(true):showLogin();});
-$('#adminBtn2').addEventListener('click',e=>{e.preventDefault();isAdmin()?enterAdmin(true):showLogin();});
 $('#loginBack').addEventListener('click',showSite);
-$('#staffLink').addEventListener('click',e=>{e.preventDefault();showLogin();});
-$('#mStaffLink').addEventListener('click',e=>{e.preventDefault();$('#mnav').classList.remove('open');showLogin();});
 $('#loginBtn').addEventListener('click',()=>tryLogin($('#loginCode').value));
 $('#loginCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryLogin($('#loginCode').value);}});
+$('#pnlSend').addEventListener('click',pnlSend);
+$('#pnlOk').addEventListener('click',pnlVerify);
+$('#pnlCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();pnlVerify();}});
+$('#pnlPhone').addEventListener('input',e=>phoneMask(e.target));
 $('#stSite').addEventListener('click',showSite);
-$('#stLogout').addEventListener('click',()=>{SS.st.removeItem('sm_staff');SS.st.removeItem('sm_code');showSite();toast('Вы вышли из панели');});
+$('#stLogout').addEventListener('click',()=>{SS.st.removeItem('sm_staff');SS.st.removeItem('sm_code');SS.st.removeItem('sm_token');showSite();toast('Вы вышли из панели');});
 
 /* --- входы --- */
 $('#aSite').addEventListener('click',showSite);
@@ -1143,21 +1223,29 @@ $('#ftYear').textContent=new Date().getFullYear();
     const j=await srvFetch('/api/state').then(r=>r.json()).catch(()=>null);
     if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;}
     else if(j&&j.empty){await srvFetch('/api/init',{method:'POST',body:JSON.stringify({db:DB})}).catch(()=>{});}
-    /* в режиме БД действительны только сессии с кодом доступа */
+    /* в режиме БД действительны только сессии с входом (телефон-токен или ПИН/пароль) */
+    const tk=SS.st.getItem('sm_token');
+    if(tk){
+      const r2=await srvFetch('/api/db?token='+encodeURIComponent(tk)).then(r=>r.json()).catch(()=>null);
+      if(r2&&r2.ok&&r2.db){mergeState(r2.db);SRV.authed='t:'+tk;SRV.updated=r2.updated;}
+      else SS.st.removeItem('sm_token');
+    }
     const sc=SS.st.getItem('sm_code');
     if(sc){
-      const r2=await srvFetch('/api/db?code='+encodeURIComponent(sc)).then(r=>r.json()).catch(()=>null);
-      if(r2&&r2.ok&&r2.db){mergeState(r2.db);SRV.authed=sc;SRV.updated=r2.updated;}
+      const r3=await srvFetch('/api/db?code='+encodeURIComponent(sc)).then(r=>r.json()).catch(()=>null);
+      if(r3&&r3.ok&&r3.db){mergeState(r3.db);SRV.authed=sc;SRV.updated=r3.updated;}
       else SS.st.removeItem('sm_code');
     }
     if(!SRV.authed){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_staff');}
     render0();
     if(isAdmin())enterAdmin(false);
     if(isStaff())enterStaff(false);
+    routeHash();
     setInterval(srvSync,15000);
   } else {
     if(isAdmin())enterAdmin(false);
     if(isStaff())enterStaff(false);
+    routeHash();
   }
 })();
 /* Межвкладочные обновления: если клиент записался в другой вкладке этого браузера

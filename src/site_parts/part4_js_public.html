@@ -64,9 +64,10 @@ function defaultDB(){
   ].map((s,i)=>Object.assign({id:i+1},s));
   const settings={companyName:'ШинаСервис',phone:'+7 (495) 120-45-67',address:'г. Москва, ул. Моторная, 12с3',
     workStart:'09:00',workEnd:'20:00',interval:60,posts:2,workDays:[1,2,3,4,5,6],blockedDates:[],adminPass:'admin123',
+    adminPhone:'+7 (900) 100-00-00',panelSlug:'panel',
     employees:[
-      {id:1,name:'Сергей',pin:'1111',color:'#60a5fa',active:true},
-      {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
+      {id:1,name:'Сергей',pin:'1111',phone:'+7 (900) 100-01-01',color:'#60a5fa',active:true},
+      {id:2,name:'Андрей',pin:'2222',phone:'+7 (900) 100-02-02',color:'#fbbf24',active:true}
     ],
     shiftStart:todayISO(),shiftFirst:1,shiftOverrides:{},reportEmail:'',staffSeen:{},
     smsChannel:'sms',smsWebhook:'',ipTitle:'',
@@ -117,6 +118,7 @@ function normalizeDB(d){
   d.settings.employees=d.settings.employees.map((e,i)=>({
     id:Number(e.id)||i+1,name:String(e.name||'Сотрудник '+(i+1)),
     pin:String(e.pin||String(1000+i*1111)),color:e.color||['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa'][i%5],
+    phone:String(e.phone||'').slice(0,20),
     active:e.active!==false,
     flex:(e.flex&&e.flex.on)?{on:true,wd:(Array.isArray(e.flex.wd)?e.flex.wd:[]).map(Number).filter(n=>n>=0&&n<=6)}:{on:false,wd:[]}}));
   const ids=d.settings.employees.map(e=>e.id);
@@ -167,10 +169,21 @@ function mergeState(jdb){
   DB=normalizeDB(d);
   return DB;
 }
+/* полный доступ к БД: по ПИН/паролю (code) или по токену после входа по телефону */
+function srvAuthUrl(){
+  return (SRV.authed&&SRV.authed.startsWith('t:'))
+    ?'/api/db?token='+encodeURIComponent(SRV.authed.slice(2))
+    :'/api/db?code='+encodeURIComponent(SRV.authed||'');
+}
+function srvAuthBody(){
+  return (SRV.authed&&SRV.authed.startsWith('t:'))
+    ?{token:SRV.authed.slice(2),db:DB}
+    :{code:SRV.authed,db:DB};
+}
 function srvSaveFull(){
-  srvFetch('/api/db',{method:'POST',body:JSON.stringify({code:SRV.authed,db:DB})})
+  srvFetch('/api/db',{method:'POST',body:JSON.stringify(srvAuthBody())})
     .then(r=>r.json())
-    .then(j=>{if(j&&j.ok){if(j.updated)SRV.updated=j.updated;}else toast('Сервер не принял изменения (проверьте код доступа)','err');})
+    .then(j=>{if(j&&j.ok){if(j.updated)SRV.updated=j.updated;}else toast('Сервер не принял изменения (проверьте вход)','err');})
     .catch(()=>toast('Сервер БД недоступен — изменения сохранены только локально','err'));
 }
 /* публичное изменение своей записи (личный кабинет): точечный patch без личных данных других клиентов */
@@ -201,7 +214,7 @@ function srvMy(phone){
 async function srvSync(){
   if(!SRV.mode||document.hidden)return;
   try{
-    const url=SRV.authed?('/api/db?code='+encodeURIComponent(SRV.authed)):'/api/state';
+    const url=SRV.authed?srvAuthUrl():'/api/state';
     const j=await srvFetch(url).then(r=>r.json());
     if(j&&j.ok&&j.db&&j.updated!==SRV.updated){
       mergeState(j.db);SRV.updated=j.updated;
@@ -225,6 +238,58 @@ const save=()=>{
   try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}
   if(SRV.mode&&SRV.authed)srvSaveFull();
 };
+/* --- авторизация по телефону + код подтверждения (SMS или MAX через шлюз;
+     шлюз не настроен — демо-режим, код показывается на экране). --- */
+const AUTH={phone:''};
+const AUTH_KEY='sm_client_auth';
+function authLoad(){
+  try{const j=JSON.parse(LS.st.getItem(AUTH_KEY)||'null');if(j&&j.phone&&j.exp>Date.now())AUTH.phone=j.phone;}catch(e){}
+}
+function authSave(){try{LS.st.setItem(AUTH_KEY,JSON.stringify({phone:AUTH.phone,exp:Date.now()+30*864e5}));}catch(e){}}
+function authClear(){AUTH.phone='';try{LS.st.removeItem(AUTH_KEY);}catch(e){}}
+authLoad();
+let MYC={phone:'',code:'',exp:0,role:null};
+function authCodeSend(phone,purpose,cb){
+  if(SRV.mode){
+    srvFetch('/api/auth/request',{method:'POST',body:JSON.stringify({phone:phone,purpose:purpose})})
+      .then(r=>r.json())
+      .then(j=>cb(j&&j.ok?{ok:true,delivered:!!j.delivered,demo:!!j.demo,code:j.code||'',role:j.role||null}:{ok:false,err:(j&&j.err)||'fail'}))
+      .catch(()=>cb({ok:false,err:'net'}));
+    return;
+  }
+  const code=String(Math.floor(100000+Math.random()*900000));
+  const url=(DB.settings.smsWebhook||'').trim();
+  const text=DB.settings.companyName+': код входа '+code+'. Никому его не сообщайте.';
+  const done=demo=>cb({ok:true,delivered:!demo,demo:demo,code:code,role:null});
+  if(url){
+    try{
+      fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({channel:(DB.settings.smsChannel==='max'?'max':'sms'),phone:phone,text:text,code:code,kind:'auth'})})
+        .then(r=>done(!r.ok)).catch(()=>done(true));
+      return;
+    }catch(e){}
+  }
+  done(true);
+}
+function roleByPhoneLocal(ph){
+  const d=String(ph||'').replace(/\D/g,'');
+  if(String(DB.settings.adminPhone||'').replace(/\D/g,'')===d)return 'admin';
+  const e=DB.settings.employees.find(x=>String(x.phone||'').replace(/\D/g,'')===d&&x.active);
+  return e?String(e.id):'client';
+}
+function authCodeVerify(phone,code,cb){
+  const ph=String(phone||'').replace(/\D/g,'');const c=String(code||'').trim();
+  if(SRV.mode){
+    srvFetch('/api/auth/verify',{method:'POST',body:JSON.stringify({phone:ph,code:c})})
+      .then(r=>r.json()).then(j=>cb(j&&j.ok?{ok:true,role:j.role,token:j.token||''}:{ok:false,err:(j&&j.err)||'fail'}))
+      .catch(()=>cb({ok:false,err:'net'}));
+    return;
+  }
+  if(!MYC.code||MYC.exp<Date.now()||String(MYC.phone||'').replace(/\D/g,'')!==ph)return cb({ok:false,err:'nocode'});
+  if(MYC.code!==c)return cb({ok:false,err:'wrong'});
+  MYC.code='';
+  cb({ok:true,role:roleByPhoneLocal(ph),token:''});
+}
 const svcById=id=>DB.services.find(s=>s.id===Number(id));
 const activeServices=()=>DB.services.filter(s=>s.active);
 const empById=id=>DB.settings.employees.find(e=>e.id===Number(id));
@@ -688,7 +753,7 @@ function showSuccess(b){
     '</div>';
   $('#bkNav').style.display='none';
   $('#okAgain').addEventListener('click',()=>{resetBk();document.getElementById('booking').scrollIntoView();});
-  $('#okMy').addEventListener('click',()=>{$('#myPhone').value=b.phone;findMy();document.getElementById('my').scrollIntoView();});
+  $('#okMy').addEventListener('click',()=>{openMyGate(b.phone);document.getElementById('my').scrollIntoView();});
   $('#okIcs').addEventListener('click',()=>downloadIcs(b));
   $('#okWa').addEventListener('click',()=>window.open(waLink('',clientMsg(b)),'_blank','noopener'));
   $('#okTg').addEventListener('click',()=>window.open(tgLink(clientMsg(b)),'_blank','noopener'));
@@ -706,19 +771,63 @@ function chooseService(id){
   toast('Услуга добавлена в запись');
 }
 
-/* --- личный кабинет клиента --- */
+/* --- личный кабинет клиента: вход по телефону + коду --- */
 const CAB={phone:''};
 function cabNotice(b,text){
   b.notices=b.notices||[];
   b.notices.push({when:Date.now(),channel:'кабинет',kind:'client',text:text,delivered:true});
 }
-function findMy(){
-  const wrap=$('#myList');
-  const dig=normDigits($('#myPhone').value||'');
-  if(dig.length!==11){wrap.innerHTML='<div class="msg warn" style="max-width:720px">Введите телефон в формате +7 XXX XXX-XX-XX — как при записи.</div>';return;}
-  CAB.phone=dig;
-  if(SRV.mode&&!SRV.authed){wrap.innerHTML='<div class="sub" style="max-width:720px">Ищем записи в базе…</div>';srvMy(dig).then(()=>renderCabinet());return;}
+function myShowStep(step){
+  $('#myAuth').hidden=step!==1;
+  $('#myCode').hidden=step!==2;
+  if(step!==3)$('#myList').innerHTML='';
+}
+function openMyGate(prefill){
+  if(prefill)$('#myPhone').value=prefill;
+  if(AUTH.phone&&(!prefill||normDigits(prefill)===normDigits(AUTH.phone))){
+    CAB.phone=normDigits(AUTH.phone);
+    myLoadCabinet();
+    myShowStep(3);
+    return;
+  }
+  myShowStep(1);
+  setTimeout(()=>$('#myPhone').focus(),60);
+}
+function myLoadCabinet(){
+  if(SRV.mode&&!SRV.authed){$('#myList').innerHTML='<div class="sub" style="max-width:720px">Загружаем записи из базы…</div>';srvMy(CAB.phone).then(()=>renderCabinet());return;}
   renderCabinet();
+}
+function mySendCode(){
+  const ph=$('#myPhone').value.trim();
+  if(!phoneOk(ph)){toast('Введите корректный номер телефона','err');return;}
+  const btn=$('#myCodeSend');btn.disabled=true;
+  authCodeSend(ph,'client',r=>{
+    btn.disabled=false;
+    if(!r.ok){toast('Не удалось отправить код — попробуйте позже','err');return;}
+    MYC={phone:ph,code:r.code||'',exp:Date.now()+5*60000,role:'client'};
+    $('#myCodeHint').textContent='Код отправлен на '+ph+'. Действует 5 минут.';
+    const d=$('#myDemo');
+    if(r.demo){d.style.display='';d.className='msg warn';d.textContent='Шлюз уведомлений не настроен — демо-режим: ваш код входа '+r.code;}
+    else d.style.display='none';
+    $('#myCodeInp').value='';
+    myShowStep(2);
+    setTimeout(()=>$('#myCodeInp').focus(),60);
+  });
+}
+function myVerify(){
+  const code=$('#myCodeInp').value.trim();
+  if(!/^\d{6}$/.test(code)){toast('Код состоит из 6 цифр','err');return;}
+  authCodeVerify(MYC.phone,code,r=>{
+    if(!r.ok){
+      const t={nocode:'Срок действия кода истёк — отправьте новый',wrong:'Неверный код — проверьте и попробуйте снова',tries:'Слишком много попыток — запросите новый код',net:'Сервер недоступен — попробуйте позже'}[r.err]||'Не удалось проверить код';
+      toast(t,'err');return;
+    }
+    AUTH.phone=MYC.phone;authSave();
+    CAB.phone=normDigits(AUTH.phone);
+    MYC={phone:'',code:'',exp:0,role:null};
+    myLoadCabinet();
+    toast('Вы вошли в личный кабинет');
+  });
 }
 function cabItems(){
   if(SRV.mode&&!SRV.authed)return SRV.cab.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
@@ -733,8 +842,8 @@ function renderCabinet(){
   const wrap=$('#myList');
   const items=cabItems();
   if(!items.length){
-    CAB.phone='';
-    wrap.innerHTML='<div class="msg" style="max-width:720px">По этому телефону записей не найдено. Проверьте номер или создайте новую запись выше.</div>';
+    wrap.innerHTML='<div class="msg" style="max-width:720px">По этому телефону записей не найдено — создайте первую запись в разделе «Онлайн-запись».</div>'+
+      '<button class="btn btn-o btn-s" data-cabout style="margin-top:6px">Выйти из кабинета</button>';
     return;
   }
   const t=todayISO();
@@ -879,8 +988,13 @@ function openMyEdit(b){
   };
 }
 $('#myPhone').addEventListener('input',e=>phoneMask(e.target));
-$('#myPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findMy();}});
-$('#myFind').addEventListener('click',findMy);
+$('#myPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();mySendCode();}});
+$('#myCodeSend').addEventListener('click',mySendCode);
+$('#myCodeOk').addEventListener('click',myVerify);
+$('#myCodeInp').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();myVerify();}});
+$('#myResend').addEventListener('click',e=>{e.preventDefault();mySendCode();});
+$('#myBack').addEventListener('click',e=>{e.preventDefault();myShowStep(1);});
+window.addEventListener('hashchange',()=>{if(location.hash==='#my')openMyGate();});
 $('#myList').addEventListener('click',e=>{
   const btn=e.target.closest('[data-cancel]');
   if(btn){
@@ -894,7 +1008,8 @@ $('#myList').addEventListener('click',e=>{
     return;
   }
   if(e.target.closest('[data-cabout]')){
-    CAB.phone='';$('#myPhone').value='';$('#myList').innerHTML='';
+    CAB.phone='';authClear();$('#myPhone').value='';$('#myList').innerHTML='';
+    myShowStep(1);
     return;
   }
   const card=e.target.closest('[data-myopen]');

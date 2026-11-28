@@ -397,7 +397,6 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
   .hdr-in{gap:10px;height:56px}
   .logo{font-size:16px}
   .logo small{display:none}
-  #adminBtn{padding:7px 10px}
   /* модалки во весь экран */
   .modal{padding:0}
   .modal-box{width:100%;min-height:100dvh;border-radius:0;border-left:none;border-right:none;animation:tin .2s}
@@ -426,7 +425,6 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
       <a href="#my">Личный кабинет</a>
       <a href="#faq">Вопросы</a>
     </nav>
-    <button class="btn btn-o btn-s" id="adminBtn">Вход</button>
     <button class="burger" id="burgerBtn" aria-label="Меню">☰</button>
   </div>
   <nav class="mnav" id="mnav">
@@ -435,7 +433,6 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
     <a href="#my">Личный кабинет</a>
     <a href="#faq">Вопросы</a>
     <a href="#contacts">Контакты</a>
-    <a href="#" id="mStaffLink">🔧 Панель сотрудника</a>
   </nav>
 </header>
 
@@ -516,11 +513,23 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
   <div class="container">
     <div class="sec-head">
       <h2 class="sec-t">Личный <em>кабинет</em></h2>
-      <p class="sec-d">Введите телефон, который указывали при записи: все визиты за всё время, подробности каждой записи, изменение неподтверждённых записей и статистика затрат и услуг.</p>
+      <p class="sec-d">Вход по номеру телефона и коду подтверждения (SMS или мессенджер MAX): все визиты за всё время, подробности каждой записи, изменение неподтверждённых записей и статистика затрат и услуг.</p>
     </div>
-    <div class="drow" style="max-width:560px">
-      <div style="flex:1;min-width:200px"><label class="lb req">Телефон записи</label><input class="inp" id="myPhone" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>
-      <button class="btn btn-p" id="myFind">Войти в кабинет</button>
+    <div id="myAuth" style="max-width:560px">
+      <div class="drow">
+        <div style="flex:1;min-width:200px"><label class="lb req">Номер телефона</label><input class="inp" id="myPhone" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>
+        <button class="btn btn-p" id="myCodeSend">Получить код</button>
+      </div>
+      <p class="hint">Пришлём 6-значный код по SMS или в MAX — канал настраивается администратором. Код действует 5 минут.</p>
+    </div>
+    <div id="myCode" hidden style="max-width:560px">
+      <p class="mut-sm" id="myCodeHint" style="margin:0 0 8px">Код отправлен.</p>
+      <div class="msg" id="myDemo" style="display:none;margin-bottom:8px"></div>
+      <div class="drow">
+        <div style="flex:1;min-width:160px"><label class="lb req">Код из сообщения</label><input class="inp" id="myCodeInp" inputmode="numeric" maxlength="6" placeholder="••••••" style="letter-spacing:7px;font-size:18px"></div>
+        <button class="btn btn-p" id="myCodeOk">Войти</button>
+      </div>
+      <p class="hint"><a href="#" id="myResend">Отправить код ещё раз</a> · <a href="#" id="myBack">изменить номер</a></p>
     </div>
     <div id="myList" style="max-width:720px"></div>
   </div>
@@ -565,8 +574,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
         <h4>Запись</h4>
         <p>Выберите услуги и время онлайн — это быстрее звонка.</p>
         <a class="btn btn-p btn-s" href="#booking">Записаться онлайн</a>
-        <p style="margin:16px 0 0"><a href="#" id="staffLink">Вход сотрудника (по ПИН-коду) →</a></p>
-        <p style="margin:8px 0 0"><a href="#" id="adminBtn2">Единый вход: сотрудник или администратор →</a></p>
+        <p class="mut-sm" style="margin:16px 0 0">Для сотрудников и администратора вход доступен только по отдельной ссылке (не публикуется на сайте).</p>
       </div>
     </div>
     <div class="ft-bot">
@@ -582,16 +590,28 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
     <div class="login-card">
       <div class="logo">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        <span>Вход — <span class="js-co">ШинаСервис</span></span>
+        <span>Панель — <span class="js-co">ШинаСервис</span></span>
       </div>
-      <p style="text-align:center;color:var(--mut);font-size:13.5px">Единая точка входа: сотрудник — по ПИН-коду, администратор — по паролю</p>
-      <label class="lb req">Код доступа</label>
-      <input class="inp" id="loginCode" autocomplete="off" placeholder="ПИН сотрудника (4–8 цифр) или пароль администратора">
+      <p style="text-align:center;color:var(--mut);font-size:13.5px">Вход для сотрудников и администратора — по номеру телефона с кодом подтверждения</p>
+      <label class="lb req">Номер телефона</label>
+      <input class="inp" id="pnlPhone" inputmode="tel" placeholder="+7 (___) ___-__-__">
+      <div class="err" id="pnlErr"></div>
+      <button class="btn btn-p" id="pnlSend" style="width:100%;margin-top:12px">Получить код</button>
+      <div id="pnlCodeWrap" hidden>
+        <label class="lb req" style="margin-top:14px">Код из сообщения</label>
+        <input class="inp" id="pnlCode" inputmode="numeric" maxlength="6" placeholder="••••••" style="text-align:center;letter-spacing:7px;font-size:18px">
+        <div class="msg" id="pnlDemo" style="display:none;margin-top:8px"></div>
+        <button class="btn btn-p" id="pnlOk" style="width:100%;margin-top:12px">Войти</button>
+      </div>
+      <p class="hint" style="margin-top:14px">Или разовый вход без телефона:</p>
+      <div class="drow">
+        <div style="flex:1;min-width:150px"><input class="inp" id="loginCode" autocomplete="off" placeholder="ПИН сотрудника или пароль администратора"></div>
+        <button class="btn btn-o" id="loginBtn">Войти</button>
+      </div>
       <div class="err" id="loginErr">Код не подошёл: нет такого ПИН-кода сотрудника и пароль администратора не совпадает.</div>
-      <button class="btn btn-p" id="loginBtn" style="width:100%;margin-top:14px">Войти</button>
-      <button class="btn btn-o" id="loginBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
-      <div class="hint">Клиенту вход не нужен: запись — на главной, свои записи — в «Моих записях» по телефону.</div>
-      <div class="hint">ПИН-коды сотрудникам выдаёт администратор: Настройки → «Сотрудники и смены». Демо-пароль админа: admin123.</div>
+      <button class="btn btn-o" id="loginBack" style="width:100%;margin-top:14px">← Вернуться на сайт</button>
+      <div class="hint">Эта страница не публикуется на сайте — вход доступен по отдельной ссылке <b id="pnlLink">#panel</b> (меняется в Настройках → «Безопасность»).</div>
+      <div class="hint">Телефоны сотрудников задаёт администратор (Настройки → «Сотрудники и смены»), телефон администратора — в «Безопасности». Альтернатива: ПИН-код/пароль. Демо-пароль: admin123.</div>
     </div>
   </div>
 </div>
@@ -823,11 +843,16 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
           <div class="panel">
             <h3>Безопасность</h3>
             <div class="f-grid">
+              <div><label class="lb">Телефон администратора (вход по SMS-коду)</label><input class="inp" id="adPhone" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>
+              <div><label class="lb">Секретная ссылка панели</label><input class="inp" id="adSlug" placeholder="panel" title="Латиница, цифры, дефис"><div class="hint">Сайт откроется как <b id="adSlugPrev">#panel</b> — эта ссылка нигде не публикуется</div></div>
               <div class="full"><label class="lb req">Текущий пароль</label><input type="password" class="inp" id="pwCur"></div>
               <div><label class="lb req">Новый пароль</label><input type="password" class="inp" id="pwNew"></div>
               <div><label class="lb req">Повторите новый</label><input type="password" class="inp" id="pwNew2"></div>
             </div>
-            <button class="btn btn-p" id="pwSave" style="margin-top:16px">Сменить пароль</button>
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+              <button class="btn btn-p" id="pwSave">Сменить пароль</button>
+              <button class="btn btn-o" id="adCfgSave">Сохранить телефон и ссылку</button>
+            </div>
           </div>
           <div class="panel danger" style="margin-top:14px">
             <h3 style="color:var(--bad)">Сброс данных</h3>
@@ -910,9 +935,10 @@ function defaultDB(){
   ].map((s,i)=>Object.assign({id:i+1},s));
   const settings={companyName:'ШинаСервис',phone:'+7 (495) 120-45-67',address:'г. Москва, ул. Моторная, 12с3',
     workStart:'09:00',workEnd:'20:00',interval:60,posts:2,workDays:[1,2,3,4,5,6],blockedDates:[],adminPass:'admin123',
+    adminPhone:'+7 (900) 100-00-00',panelSlug:'panel',
     employees:[
-      {id:1,name:'Сергей',pin:'1111',color:'#60a5fa',active:true},
-      {id:2,name:'Андрей',pin:'2222',color:'#fbbf24',active:true}
+      {id:1,name:'Сергей',pin:'1111',phone:'+7 (900) 100-01-01',color:'#60a5fa',active:true},
+      {id:2,name:'Андрей',pin:'2222',phone:'+7 (900) 100-02-02',color:'#fbbf24',active:true}
     ],
     shiftStart:todayISO(),shiftFirst:1,shiftOverrides:{},reportEmail:'',staffSeen:{},
     smsChannel:'sms',smsWebhook:'',ipTitle:'',
@@ -963,6 +989,7 @@ function normalizeDB(d){
   d.settings.employees=d.settings.employees.map((e,i)=>({
     id:Number(e.id)||i+1,name:String(e.name||'Сотрудник '+(i+1)),
     pin:String(e.pin||String(1000+i*1111)),color:e.color||['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa'][i%5],
+    phone:String(e.phone||'').slice(0,20),
     active:e.active!==false,
     flex:(e.flex&&e.flex.on)?{on:true,wd:(Array.isArray(e.flex.wd)?e.flex.wd:[]).map(Number).filter(n=>n>=0&&n<=6)}:{on:false,wd:[]}}));
   const ids=d.settings.employees.map(e=>e.id);
@@ -1013,10 +1040,21 @@ function mergeState(jdb){
   DB=normalizeDB(d);
   return DB;
 }
+/* полный доступ к БД: по ПИН/паролю (code) или по токену после входа по телефону */
+function srvAuthUrl(){
+  return (SRV.authed&&SRV.authed.startsWith('t:'))
+    ?'/api/db?token='+encodeURIComponent(SRV.authed.slice(2))
+    :'/api/db?code='+encodeURIComponent(SRV.authed||'');
+}
+function srvAuthBody(){
+  return (SRV.authed&&SRV.authed.startsWith('t:'))
+    ?{token:SRV.authed.slice(2),db:DB}
+    :{code:SRV.authed,db:DB};
+}
 function srvSaveFull(){
-  srvFetch('/api/db',{method:'POST',body:JSON.stringify({code:SRV.authed,db:DB})})
+  srvFetch('/api/db',{method:'POST',body:JSON.stringify(srvAuthBody())})
     .then(r=>r.json())
-    .then(j=>{if(j&&j.ok){if(j.updated)SRV.updated=j.updated;}else toast('Сервер не принял изменения (проверьте код доступа)','err');})
+    .then(j=>{if(j&&j.ok){if(j.updated)SRV.updated=j.updated;}else toast('Сервер не принял изменения (проверьте вход)','err');})
     .catch(()=>toast('Сервер БД недоступен — изменения сохранены только локально','err'));
 }
 /* публичное изменение своей записи (личный кабинет): точечный patch без личных данных других клиентов */
@@ -1047,7 +1085,7 @@ function srvMy(phone){
 async function srvSync(){
   if(!SRV.mode||document.hidden)return;
   try{
-    const url=SRV.authed?('/api/db?code='+encodeURIComponent(SRV.authed)):'/api/state';
+    const url=SRV.authed?srvAuthUrl():'/api/state';
     const j=await srvFetch(url).then(r=>r.json());
     if(j&&j.ok&&j.db&&j.updated!==SRV.updated){
       mergeState(j.db);SRV.updated=j.updated;
@@ -1071,6 +1109,58 @@ const save=()=>{
   try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}
   if(SRV.mode&&SRV.authed)srvSaveFull();
 };
+/* --- авторизация по телефону + код подтверждения (SMS или MAX через шлюз;
+     шлюз не настроен — демо-режим, код показывается на экране). --- */
+const AUTH={phone:''};
+const AUTH_KEY='sm_client_auth';
+function authLoad(){
+  try{const j=JSON.parse(LS.st.getItem(AUTH_KEY)||'null');if(j&&j.phone&&j.exp>Date.now())AUTH.phone=j.phone;}catch(e){}
+}
+function authSave(){try{LS.st.setItem(AUTH_KEY,JSON.stringify({phone:AUTH.phone,exp:Date.now()+30*864e5}));}catch(e){}}
+function authClear(){AUTH.phone='';try{LS.st.removeItem(AUTH_KEY);}catch(e){}}
+authLoad();
+let MYC={phone:'',code:'',exp:0,role:null};
+function authCodeSend(phone,purpose,cb){
+  if(SRV.mode){
+    srvFetch('/api/auth/request',{method:'POST',body:JSON.stringify({phone:phone,purpose:purpose})})
+      .then(r=>r.json())
+      .then(j=>cb(j&&j.ok?{ok:true,delivered:!!j.delivered,demo:!!j.demo,code:j.code||'',role:j.role||null}:{ok:false,err:(j&&j.err)||'fail'}))
+      .catch(()=>cb({ok:false,err:'net'}));
+    return;
+  }
+  const code=String(Math.floor(100000+Math.random()*900000));
+  const url=(DB.settings.smsWebhook||'').trim();
+  const text=DB.settings.companyName+': код входа '+code+'. Никому его не сообщайте.';
+  const done=demo=>cb({ok:true,delivered:!demo,demo:demo,code:code,role:null});
+  if(url){
+    try{
+      fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({channel:(DB.settings.smsChannel==='max'?'max':'sms'),phone:phone,text:text,code:code,kind:'auth'})})
+        .then(r=>done(!r.ok)).catch(()=>done(true));
+      return;
+    }catch(e){}
+  }
+  done(true);
+}
+function roleByPhoneLocal(ph){
+  const d=String(ph||'').replace(/\D/g,'');
+  if(String(DB.settings.adminPhone||'').replace(/\D/g,'')===d)return 'admin';
+  const e=DB.settings.employees.find(x=>String(x.phone||'').replace(/\D/g,'')===d&&x.active);
+  return e?String(e.id):'client';
+}
+function authCodeVerify(phone,code,cb){
+  const ph=String(phone||'').replace(/\D/g,'');const c=String(code||'').trim();
+  if(SRV.mode){
+    srvFetch('/api/auth/verify',{method:'POST',body:JSON.stringify({phone:ph,code:c})})
+      .then(r=>r.json()).then(j=>cb(j&&j.ok?{ok:true,role:j.role,token:j.token||''}:{ok:false,err:(j&&j.err)||'fail'}))
+      .catch(()=>cb({ok:false,err:'net'}));
+    return;
+  }
+  if(!MYC.code||MYC.exp<Date.now()||String(MYC.phone||'').replace(/\D/g,'')!==ph)return cb({ok:false,err:'nocode'});
+  if(MYC.code!==c)return cb({ok:false,err:'wrong'});
+  MYC.code='';
+  cb({ok:true,role:roleByPhoneLocal(ph),token:''});
+}
 const svcById=id=>DB.services.find(s=>s.id===Number(id));
 const activeServices=()=>DB.services.filter(s=>s.active);
 const empById=id=>DB.settings.employees.find(e=>e.id===Number(id));
@@ -1534,7 +1624,7 @@ function showSuccess(b){
     '</div>';
   $('#bkNav').style.display='none';
   $('#okAgain').addEventListener('click',()=>{resetBk();document.getElementById('booking').scrollIntoView();});
-  $('#okMy').addEventListener('click',()=>{$('#myPhone').value=b.phone;findMy();document.getElementById('my').scrollIntoView();});
+  $('#okMy').addEventListener('click',()=>{openMyGate(b.phone);document.getElementById('my').scrollIntoView();});
   $('#okIcs').addEventListener('click',()=>downloadIcs(b));
   $('#okWa').addEventListener('click',()=>window.open(waLink('',clientMsg(b)),'_blank','noopener'));
   $('#okTg').addEventListener('click',()=>window.open(tgLink(clientMsg(b)),'_blank','noopener'));
@@ -1552,19 +1642,63 @@ function chooseService(id){
   toast('Услуга добавлена в запись');
 }
 
-/* --- личный кабинет клиента --- */
+/* --- личный кабинет клиента: вход по телефону + коду --- */
 const CAB={phone:''};
 function cabNotice(b,text){
   b.notices=b.notices||[];
   b.notices.push({when:Date.now(),channel:'кабинет',kind:'client',text:text,delivered:true});
 }
-function findMy(){
-  const wrap=$('#myList');
-  const dig=normDigits($('#myPhone').value||'');
-  if(dig.length!==11){wrap.innerHTML='<div class="msg warn" style="max-width:720px">Введите телефон в формате +7 XXX XXX-XX-XX — как при записи.</div>';return;}
-  CAB.phone=dig;
-  if(SRV.mode&&!SRV.authed){wrap.innerHTML='<div class="sub" style="max-width:720px">Ищем записи в базе…</div>';srvMy(dig).then(()=>renderCabinet());return;}
+function myShowStep(step){
+  $('#myAuth').hidden=step!==1;
+  $('#myCode').hidden=step!==2;
+  if(step!==3)$('#myList').innerHTML='';
+}
+function openMyGate(prefill){
+  if(prefill)$('#myPhone').value=prefill;
+  if(AUTH.phone&&(!prefill||normDigits(prefill)===normDigits(AUTH.phone))){
+    CAB.phone=normDigits(AUTH.phone);
+    myLoadCabinet();
+    myShowStep(3);
+    return;
+  }
+  myShowStep(1);
+  setTimeout(()=>$('#myPhone').focus(),60);
+}
+function myLoadCabinet(){
+  if(SRV.mode&&!SRV.authed){$('#myList').innerHTML='<div class="sub" style="max-width:720px">Загружаем записи из базы…</div>';srvMy(CAB.phone).then(()=>renderCabinet());return;}
   renderCabinet();
+}
+function mySendCode(){
+  const ph=$('#myPhone').value.trim();
+  if(!phoneOk(ph)){toast('Введите корректный номер телефона','err');return;}
+  const btn=$('#myCodeSend');btn.disabled=true;
+  authCodeSend(ph,'client',r=>{
+    btn.disabled=false;
+    if(!r.ok){toast('Не удалось отправить код — попробуйте позже','err');return;}
+    MYC={phone:ph,code:r.code||'',exp:Date.now()+5*60000,role:'client'};
+    $('#myCodeHint').textContent='Код отправлен на '+ph+'. Действует 5 минут.';
+    const d=$('#myDemo');
+    if(r.demo){d.style.display='';d.className='msg warn';d.textContent='Шлюз уведомлений не настроен — демо-режим: ваш код входа '+r.code;}
+    else d.style.display='none';
+    $('#myCodeInp').value='';
+    myShowStep(2);
+    setTimeout(()=>$('#myCodeInp').focus(),60);
+  });
+}
+function myVerify(){
+  const code=$('#myCodeInp').value.trim();
+  if(!/^\d{6}$/.test(code)){toast('Код состоит из 6 цифр','err');return;}
+  authCodeVerify(MYC.phone,code,r=>{
+    if(!r.ok){
+      const t={nocode:'Срок действия кода истёк — отправьте новый',wrong:'Неверный код — проверьте и попробуйте снова',tries:'Слишком много попыток — запросите новый код',net:'Сервер недоступен — попробуйте позже'}[r.err]||'Не удалось проверить код';
+      toast(t,'err');return;
+    }
+    AUTH.phone=MYC.phone;authSave();
+    CAB.phone=normDigits(AUTH.phone);
+    MYC={phone:'',code:'',exp:0,role:null};
+    myLoadCabinet();
+    toast('Вы вошли в личный кабинет');
+  });
 }
 function cabItems(){
   if(SRV.mode&&!SRV.authed)return SRV.cab.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
@@ -1579,8 +1713,8 @@ function renderCabinet(){
   const wrap=$('#myList');
   const items=cabItems();
   if(!items.length){
-    CAB.phone='';
-    wrap.innerHTML='<div class="msg" style="max-width:720px">По этому телефону записей не найдено. Проверьте номер или создайте новую запись выше.</div>';
+    wrap.innerHTML='<div class="msg" style="max-width:720px">По этому телефону записей не найдено — создайте первую запись в разделе «Онлайн-запись».</div>'+
+      '<button class="btn btn-o btn-s" data-cabout style="margin-top:6px">Выйти из кабинета</button>';
     return;
   }
   const t=todayISO();
@@ -1725,8 +1859,13 @@ function openMyEdit(b){
   };
 }
 $('#myPhone').addEventListener('input',e=>phoneMask(e.target));
-$('#myPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findMy();}});
-$('#myFind').addEventListener('click',findMy);
+$('#myPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();mySendCode();}});
+$('#myCodeSend').addEventListener('click',mySendCode);
+$('#myCodeOk').addEventListener('click',myVerify);
+$('#myCodeInp').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();myVerify();}});
+$('#myResend').addEventListener('click',e=>{e.preventDefault();mySendCode();});
+$('#myBack').addEventListener('click',e=>{e.preventDefault();myShowStep(1);});
+window.addEventListener('hashchange',()=>{if(location.hash==='#my')openMyGate();});
 $('#myList').addEventListener('click',e=>{
   const btn=e.target.closest('[data-cancel]');
   if(btn){
@@ -1740,7 +1879,8 @@ $('#myList').addEventListener('click',e=>{
     return;
   }
   if(e.target.closest('[data-cabout]')){
-    CAB.phone='';$('#myPhone').value='';$('#myList').innerHTML='';
+    CAB.phone='';authClear();$('#myPhone').value='';$('#myList').innerHTML='';
+    myShowStep(1);
     return;
   }
   const card=e.target.closest('[data-myopen]');
@@ -2294,6 +2434,9 @@ function renderSettings(){
   $('#stReportEmail').value=s.reportEmail||'';
   $('#stSmsCh').value=s.smsChannel==='max'?'max':'sms';
   $('#stSmsUrl').value=s.smsWebhook||'';
+  $('#adPhone').value=s.adminPhone||'';
+  $('#adSlug').value=s.panelSlug||'panel';
+  $('#adSlugPrev').textContent='#'+panelSlug();
   $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
   renderEmployees();
   renderShiftCfg();
@@ -2336,6 +2479,7 @@ function renderEmployees(){
       empBadge(e.id)+
       '<div class="nm">'+esc(e.name)+(e.active?'':' <span class="st st-cancel">неактивен</span>')+'</div>'+
       '<span class="pin">ПИН: '+esc(e.pin)+'</span>'+
+      '<span class="pin">'+(e.phone?'📱 '+esc(e.phone):'📱 телефон не задан')+'</span>'+
       (e.flex&&e.flex.on&&e.flex.wd.length?'<span class="pin">гибкий график: '+fmtFlexWd(e.flex.wd)+'</span>':'')+
       '<label class="wday"><input type="checkbox" data-empact="'+e.id+'"'+(e.active?' checked':'')+'><span>'+(e.active?'В смене':'Вне смены')+'</span></label>'+
       '<button class="btn btn-o btn-s" data-empedit="'+e.id+'" title="Изменить">✎</button>'+
@@ -2470,6 +2614,7 @@ function openEmpModal(id){
       '<div><label class="lb">Цвет метки</label><select id="emColor" class="inp">'+
         ['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa','#f87171'].map(c=>'<option value="'+c+'"'+(emp&&emp.color===c?' selected':'')+'>'+c+'</option>').join('')+
       '</select></div>'+
+      '<div class="full"><label class="lb">Телефон для входа по коду (SMS или MAX)</label><input id="emPhone" class="inp" inputmode="tel" value="'+(emp?esc(emp.phone||''):'')+'" placeholder="+7 (___) ___-__-__"><p class="mut-sm" style="margin:4px 0 0">Сотрудник входит по этому номеру и SMS-коду на скрытой ссылке панели. Можно оставить пустым — тогда вход только по ПИН-коду.</p></div>'+
       '<div class="full"><label class="wday" style="margin-top:6px"><input type="checkbox" id="emAct"'+(!emp||emp.active?' checked':'')+'><span>Участвует в графике смен</span></label></div>'+
       '<div class="full"><label class="wday"><input type="checkbox" id="emFlex"'+(flexOn?' checked':'')+'><span>⏱ Гибкий график — закрепить свои дни недели</span></label></div>'+
       '<div class="full" id="emFlexWd"'+(flexOn?'':' style="display:none"')+'>'+
@@ -2488,10 +2633,14 @@ function openEmpModal(id){
     if(name.length<2){toast('Укажите имя','err');return;}
     if(!/^\d{4,8}$/.test(pin)){toast('ПИН — от 4 до 8 цифр','err');return;}
     if(DB.settings.employees.some(x=>x.pin===pin&&(!emp||x.id!==emp.id))){toast('Такой ПИН уже есть у другого сотрудника','err');return;}
+    const phoneRaw=$('#emPhone').value.trim();
+    if(phoneRaw&&!phoneOk(phoneRaw)){toast('Телефон сотрудника некорректен','err');return;}
+    if(phoneRaw&&normDigits(phoneRaw)===normDigits(DB.settings.adminPhone||'')){toast('Этот телефон уже назначен администратору','err');return;}
+    if(phoneRaw&&DB.settings.employees.some(x=>String(x.phone||'').replace(/\D/g,'')===normDigits(phoneRaw)&&(!emp||x.id!==emp.id))){toast('Этот телефон уже у другого сотрудника','err');return;}
     const flexOn2=$('#emFlex').checked;
     const wd=$$('#modalBox [data-emwd]:checked').map(ch=>Number(ch.dataset.emwd));
     if(flexOn2&&!wd.length){toast('Отметьте хотя бы один рабочий день гибкого графика','err');return;}
-    const data={name,pin,color:$('#emColor').value,active:$('#emAct').checked,flex:{on:flexOn2,wd:flexOn2?wd:[]}};
+    const data={name,pin,phone:phoneRaw,color:$('#emColor').value,active:$('#emAct').checked,flex:{on:flexOn2,wd:flexOn2?wd:[]}};
     if(emp)Object.assign(emp,data);
     else{
       const nid=DB.settings.employees.reduce((m,x)=>Math.max(m,x.id),0)+1;
@@ -2536,6 +2685,20 @@ $('#pwSave').addEventListener('click',()=>{
   $('#pwCur').value='';$('#pwNew').value='';$('#pwNew2').value='';
   toast('Пароль изменён');
 });
+/* --- вход персонала: телефон администратора и секретная ссылка панели --- */
+$('#adCfgSave').addEventListener('click',()=>{
+  const ph=$('#adPhone').value.trim();
+  if(ph&&!phoneOk(ph)){toast('Введите корректный телефон администратора','err');return;}
+  if(ph&&DB.settings.employees.some(e=>String(e.phone||'').replace(/\D/g,'')===normDigits(ph))){toast('Этот телефон уже привязан к сотруднику','err');return;}
+  const slug=String($('#adSlug').value||'panel').replace(/[^a-zA-Z0-9-]/g,'')||'panel';
+  DB.settings.adminPhone=ph;
+  DB.settings.panelSlug=slug;
+  save();
+  $('#adSlugPrev').textContent='#'+slug;
+  $('#pnlLink').textContent='#'+slug;
+  $('#adSlug').value=slug;
+  toast('Сохранено. Ссылка панели: '+location.pathname+'#'+slug);
+});
 $('#btnExpJson').addEventListener('click',()=>{
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='shinaservice_backup_'+todayISO()+'.json';
@@ -2569,8 +2732,8 @@ $('#btnReset').addEventListener('click',()=>{
 function hideViews(){['#site','#loginView','#admin','#staff'].forEach(s=>{$(s).hidden=true;});}
 function enterAdmin(msg){hideViews();$('#admin').hidden=false;window.scrollTo(0,0);renderAdmin();if(msg)toast('Добро пожаловать!');}
 function showSite(){hideViews();$('#site').hidden=false;}
-function showLogin(){hideViews();$('#loginView').hidden=false;setTimeout(()=>$('#loginCode').focus(),60);}
-function logout(){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_code');showSite();toast('Вы вышли из админки');}
+function showLogin(){hideViews();$('#loginView').hidden=false;$('#pnlLink').textContent='#'+panelSlug();$('#pnlCodeWrap').hidden=true;$('#pnlSend').textContent='Получить код';$('#pnlErr').style.display='none';setTimeout(()=>$('#pnlPhone').focus(),60);}
+function logout(){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_code');SS.st.removeItem('sm_token');showSite();toast('Вы вышли из админки');}
 
 /* ================= ПАНЕЛЬ СОТРУДНИКА ================= */
 const S={empId:null,filter:'today',view:'list',calMonth:null,calDay:null};
@@ -2846,7 +3009,64 @@ $('#stList').addEventListener('click',e=>{
   if(cn){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> ('+esc(b.name)+') на '+fmtDateHuman(b.date)+', '+b.time+' будет отменена, клиент получит уведомление.','Отменить',()=>{
     b.status='cancelled';notifyClient(b,'cancelled');save();renderStaff();toast('Запись отменена · клиент уведомлён');});}
 });
-/* --- единая точка входа: ПИН сотрудника или пароль администратора --- */
+/* --- вход персонала (скрытая ссылка #<slug>): телефон + код, либо ПИН/пароль --- */
+function panelSlug(){return String(DB.settings.panelSlug||'panel').replace(/[^a-zA-Z0-9-]/g,'')||'panel';}
+function routeHash(){
+  const h=decodeURIComponent(location.hash.replace(/^#/,'')).toLowerCase();
+  if(!h||h!==panelSlug().toLowerCase())return;
+  if(isAdmin())enterAdmin(false);
+  else if(isStaff())enterStaff(false);
+  else showLogin();
+}
+window.addEventListener('hashchange',routeHash);
+function pnlSend(){
+  const ph=$('#pnlPhone').value.trim();
+  const errEl=$('#pnlErr');
+  errEl.style.display='none';
+  if(!phoneOk(ph)){errEl.textContent='Введите корректный номер телефона';errEl.style.display='block';return;}
+  /* локальный режим: сразу проверяем, что телефон привязан к персоналу */
+  if(!SRV.mode&&roleByPhoneLocal(ph)==='client'){
+    errEl.textContent='Этот номер не привязан к сотруднику или администратору';
+    errEl.style.display='block';
+    return;
+  }
+  const btn=$('#pnlSend');btn.disabled=true;
+  authCodeSend(ph,'panel',r=>{
+    btn.disabled=false;
+    if(!r.ok){
+      errEl.textContent={notstaff:'Этот номер не привязан к сотруднику или администратору',net:'Сервер недоступен — попробуйте позже'}[r.err]||'Не удалось отправить код — попробуйте позже';
+      errEl.style.display='block';
+      return;
+    }
+    MYC={phone:ph,code:r.code||'',exp:Date.now()+5*60000,role:r.role||null};
+    $('#pnlDemo').style.display=r.demo?'':'none';
+    $('#pnlDemo').textContent='Шлюз уведомлений не настроен — демо-режим: ваш код входа '+r.code;
+    $('#pnlCodeWrap').hidden=false;
+    $('#pnlSend').textContent='Отправить код ещё раз';
+    $('#pnlCode').value='';
+    setTimeout(()=>$('#pnlCode').focus(),60);
+  });
+}
+function pnlVerify(){
+  const errEl=$('#pnlErr');
+  errEl.style.display='none';
+  const code=$('#pnlCode').value.trim();
+  if(!/^\d{6}$/.test(code)){errEl.textContent='Код состоит из 6 цифр';errEl.style.display='block';return;}
+  authCodeVerify(MYC.phone,code,r=>{
+    if(!r.ok){
+      errEl.textContent={nocode:'Срок действия кода истёк — отправьте новый',wrong:'Неверный код — попробуйте ещё раз',tries:'Слишком много попыток — отправьте код заново',net:'Сервер недоступен'}[r.err]||'Не удалось проверить код';
+      errEl.style.display='block';
+      return;
+    }
+    if(!r.role||r.role==='client'){errEl.textContent='Этот номер не привязан к сотруднику или администратору';errEl.style.display='block';return;}
+    SS.st.removeItem('sm_code');
+    if(SRV.mode&&r.token){SRV.authed='t:'+r.token;SS.st.setItem('sm_token',r.token);}
+    $('#pnlCode').value='';
+    ensureNotifPerm();
+    if(r.role==='admin'){SS.st.setItem('sm_admin','1');enterAdmin(true);}
+    else{SS.st.setItem('sm_staff',String(r.role));enterStaff(true);}
+  });
+}
 async function tryLogin(codeRaw){
   const code=(codeRaw||'').trim();
   const errEl=$('#loginErr');
@@ -2871,15 +3091,15 @@ async function tryLogin(codeRaw){
   if(code===DB.settings.adminPass){$('#loginCode').value='';errEl.style.display='none';SS.st.setItem('sm_admin','1');ensureNotifPerm();enterAdmin(true);return;}
   errEl.style.display='block';
 }
-$('#adminBtn').addEventListener('click',()=>{isAdmin()?enterAdmin(true):showLogin();});
-$('#adminBtn2').addEventListener('click',e=>{e.preventDefault();isAdmin()?enterAdmin(true):showLogin();});
 $('#loginBack').addEventListener('click',showSite);
-$('#staffLink').addEventListener('click',e=>{e.preventDefault();showLogin();});
-$('#mStaffLink').addEventListener('click',e=>{e.preventDefault();$('#mnav').classList.remove('open');showLogin();});
 $('#loginBtn').addEventListener('click',()=>tryLogin($('#loginCode').value));
 $('#loginCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryLogin($('#loginCode').value);}});
+$('#pnlSend').addEventListener('click',pnlSend);
+$('#pnlOk').addEventListener('click',pnlVerify);
+$('#pnlCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();pnlVerify();}});
+$('#pnlPhone').addEventListener('input',e=>phoneMask(e.target));
 $('#stSite').addEventListener('click',showSite);
-$('#stLogout').addEventListener('click',()=>{SS.st.removeItem('sm_staff');SS.st.removeItem('sm_code');showSite();toast('Вы вышли из панели');});
+$('#stLogout').addEventListener('click',()=>{SS.st.removeItem('sm_staff');SS.st.removeItem('sm_code');SS.st.removeItem('sm_token');showSite();toast('Вы вышли из панели');});
 
 /* --- входы --- */
 $('#aSite').addEventListener('click',showSite);
@@ -2897,21 +3117,29 @@ $('#ftYear').textContent=new Date().getFullYear();
     const j=await srvFetch('/api/state').then(r=>r.json()).catch(()=>null);
     if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;}
     else if(j&&j.empty){await srvFetch('/api/init',{method:'POST',body:JSON.stringify({db:DB})}).catch(()=>{});}
-    /* в режиме БД действительны только сессии с кодом доступа */
+    /* в режиме БД действительны только сессии с входом (телефон-токен или ПИН/пароль) */
+    const tk=SS.st.getItem('sm_token');
+    if(tk){
+      const r2=await srvFetch('/api/db?token='+encodeURIComponent(tk)).then(r=>r.json()).catch(()=>null);
+      if(r2&&r2.ok&&r2.db){mergeState(r2.db);SRV.authed='t:'+tk;SRV.updated=r2.updated;}
+      else SS.st.removeItem('sm_token');
+    }
     const sc=SS.st.getItem('sm_code');
     if(sc){
-      const r2=await srvFetch('/api/db?code='+encodeURIComponent(sc)).then(r=>r.json()).catch(()=>null);
-      if(r2&&r2.ok&&r2.db){mergeState(r2.db);SRV.authed=sc;SRV.updated=r2.updated;}
+      const r3=await srvFetch('/api/db?code='+encodeURIComponent(sc)).then(r=>r.json()).catch(()=>null);
+      if(r3&&r3.ok&&r3.db){mergeState(r3.db);SRV.authed=sc;SRV.updated=r3.updated;}
       else SS.st.removeItem('sm_code');
     }
     if(!SRV.authed){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_staff');}
     render0();
     if(isAdmin())enterAdmin(false);
     if(isStaff())enterStaff(false);
+    routeHash();
     setInterval(srvSync,15000);
   } else {
     if(isAdmin())enterAdmin(false);
     if(isStaff())enterStaff(false);
+    routeHash();
   }
 })();
 /* Межвкладочные обновления: если клиент записался в другой вкладке этого браузера
