@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ШинаСервис — личный кабинет клиента</title>
+
+<meta name="description" content="Личный кабинет клиента: все записи за всё время, перенос и отмена, статистика обслуживания. Вход по номеру телефона с кодом.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='%23f59e0b' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='3' fill='none' stroke='%23f59e0b' stroke-width='2'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b0e13;--bg2:#0f131b;--card:#141924;--card2:#171d2a;
+  --line:#232b3b;--line2:#2c3650;
+  --text:#e9edf5;--mut:#93a0b4;--dim:#6b7890;
+  --acc:#f59e0b;--acc2:#fbbf24;--acc-d:#b45309;
+  --ok:#34d399;--bad:#f87171;--info:#60a5fa;
+  --r:16px;--r2:11px;--sh:0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{overflow-x:clip}
+[hidden]{display:none!important}
+h1,h2,h3,h4{line-height:1.25;margin:0 0 .5em}
+p{margin:0 0 1em}
+a{color:var(--acc2);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font:inherit;cursor:pointer}
+input,select,textarea{font:inherit}
+img{max-width:100%}
+.container{max-width:1120px;margin:0 auto;padding:0 18px}
+section{scroll-margin-top:86px}
+/* --- header --- */
+.hdr{position:sticky;top:0;z-index:50;background:rgba(11,14,19,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.hdr-in{display:flex;align-items:center;gap:16px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:.3px;color:var(--text);white-space:nowrap}
+.logo svg{width:30px;height:30px;color:var(--acc);flex:none}
+.logo small{color:var(--dim);font-weight:600;font-size:11px;display:block;letter-spacing:.5px}
+.nav{display:flex;gap:2px;margin-left:auto}
+.nav a{color:var(--mut);padding:8px 12px;border-radius:10px;font-weight:600;font-size:14px}
+.nav a:hover{color:var(--text);background:var(--card);text-decoration:none}
+.burger{display:none;margin-left:auto;background:none;border:1px solid var(--line);border-radius:10px;color:var(--text);padding:8px 11px;font-size:17px;line-height:1}
+.mnav{display:none;border-top:1px solid var(--line);background:var(--bg2)}
+.mnav.open{display:block}
+.mnav a{display:block;padding:13px 18px;color:var(--text);font-weight:600;border-bottom:1px solid var(--line)}
+.mnav a:last-child{border-bottom:none}
+/* --- buttons --- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;border:1px solid transparent;font-weight:700;padding:11px 18px;font-size:14.5px;transition:.15s;white-space:nowrap}
+.btn-p{background:var(--acc);color:#161006}
+.btn-p:hover{background:var(--acc2)}
+.btn-o{background:transparent;border-color:var(--line2);color:var(--text)}
+.btn-o:hover{border-color:var(--acc);color:var(--acc2)}
+.btn-d{background:transparent;border-color:rgba(248,113,113,.4);color:var(--bad)}
+.btn-d:hover{background:rgba(248,113,113,.1)}
+.btn-ok{background:rgba(52,211,153,.15);color:var(--ok);border:1px solid rgba(52,211,153,.35)}
+.btn-s{padding:7px 12px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* --- hero --- */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:radial-gradient(900px 420px at 85% -10%,rgba(245,158,11,.13),transparent 60%),radial-gradient(700px 380px at -10% 110%,rgba(96,165,250,.08),transparent 60%)}
+.hero-in{padding:clamp(46px,8vw,90px) 0;max-width:780px;position:relative;z-index:1}
+.kick{display:inline-flex;align-items:center;gap:8px;color:var(--acc2);font-weight:700;font-size:12.5px;letter-spacing:1.2px;text-transform:uppercase;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);padding:7px 14px;border-radius:999px;margin-bottom:20px}
+.hero h1{font-size:clamp(30px,5.4vw,52px);font-weight:800;margin:0 0 14px}
+.hero h1 em{font-style:normal;color:var(--acc)}
+.hero-sub{color:var(--mut);font-size:clamp(15px,2vw,17.5px);max-width:580px;margin-bottom:26px}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+.hero-chips{display:flex;gap:10px;flex-wrap:wrap}
+.hchip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:13.5px;color:var(--dim)}
+.hchip b{color:var(--text);font-weight:600}
+.hero-stats{display:flex;gap:clamp(22px,4.5vw,52px);margin-top:34px;flex-wrap:wrap}
+.hstat b{display:block;font-size:clamp(20px,3vw,26px)}
+.hstat span{color:var(--dim);font-size:13px}
+.ring{position:absolute;border-radius:50%;pointer-events:none}
+.ring.r1{width:520px;height:520px;right:-150px;top:-170px;border:2px dashed rgba(245,158,11,.18)}
+.ring.r2{width:340px;height:340px;right:30px;bottom:-190px;border:2px solid rgba(245,158,11,.1)}
+/* --- sections --- */
+.sec{padding:clamp(44px,7vw,76px) 0}
+.sec.alt{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sec-head{max-width:660px;margin-bottom:32px}
+.sec-t{font-size:clamp(23px,3.4vw,32px);font-weight:800}
+.sec-t em{font-style:normal;color:var(--acc)}
+.sec-d{color:var(--mut);margin:0}
+/* --- services grid --- */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.svc-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:10px;transition:.15s}
+.svc-card:hover{border-color:var(--line2);transform:translateY(-2px)}
+.svc-ico{font-size:26px}
+.svc-card h3{font-size:16.5px;margin:0}
+.svc-card p{color:var(--mut);font-size:13.5px;margin:0;flex:1}
+.svc-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.svc-price{font-weight:800;color:var(--acc2);font-size:17px}
+.svc-dur{color:var(--dim);font-size:12.5px}
+/* --- how steps --- */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px}
+.step-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.step-n{width:34px;height:34px;border-radius:50%;background:rgba(245,158,11,.14);color:var(--acc2);display:flex;align-items:center;justify-content:center;font-weight:800;margin-bottom:12px}
+.step-card h3{font-size:15.5px}
+.step-card p{color:var(--mut);font-size:13.5px;margin:0}
+/* --- wizard --- */
+.bk-wrap{max-width:780px;margin:0 auto}
+.bk-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.prog{display:flex;border-bottom:1px solid var(--line)}
+.prog-i{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;padding:14px 12px;color:var(--dim);font-weight:600;font-size:13.5px;border-bottom:2px solid transparent}
+.prog-i b{width:26px;height:26px;border-radius:50%;background:var(--bg2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:12.5px;flex:none}
+.prog-i.act{color:var(--text);border-bottom-color:var(--acc)}
+.prog-i.act b{background:var(--acc);color:#161006;border-color:var(--acc)}
+.prog-i.done{color:var(--ok)}
+.prog-i.done b{background:rgba(52,211,153,.15);border-color:rgba(52,211,153,.4);color:var(--ok)}
+.bk-body{padding:clamp(16px,3vw,26px)}
+.bk-nav{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:14px clamp(16px,3vw,26px);background:var(--bg2)}
+/* selectable rows */
+.svc-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;cursor:pointer;transition:.12s;background:var(--bg2)}
+.svc-row:hover{border-color:var(--line2)}
+.svc-row input{display:none}
+.svc-row .cb{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line2);flex:none;display:flex;align-items:center;justify-content:center;color:transparent;font-size:13px}
+.svc-row.on{border-color:var(--acc);background:rgba(245,158,11,.07)}
+.svc-row.on .cb{background:var(--acc);border-color:var(--acc);color:#161006}
+.svc-row .n{flex:1;min-width:0}
+.svc-row .n b{display:block;font-size:14.5px}
+.svc-row .n span{color:var(--dim);font-size:12.5px}
+.svc-row .p{font-weight:700;color:var(--acc2);white-space:nowrap}
+.tot{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--line2);margin-top:14px;padding-top:14px;font-weight:700}
+.tot .t2{color:var(--mut);font-weight:500;font-size:13.5px}
+/* date & slots */
+.drow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.drow>div:first-child{flex:1;min-width:200px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chipbtn{background:var(--bg2);border:1px solid var(--line2);color:var(--mut);border-radius:10px;padding:10px 14px;font-weight:600;font-size:13px}
+.chipbtn:hover,.chipbtn.on{border-color:var(--acc);color:var(--acc2)}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px}
+.slot{position:relative;padding:11px 6px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2);color:var(--text);font-weight:700;font-size:14px;text-align:center;transition:.12s}
+.slot:hover:not(:disabled){border-color:var(--acc)}
+.slot.sel{background:var(--acc);border-color:var(--acc);color:#161006}
+.slot:disabled{opacity:.3;cursor:not-allowed}
+.slot .fr{position:absolute;top:3px;right:6px;font-size:9.5px;color:var(--ok);font-weight:700}
+.slot.sel .fr{color:#161006}
+.msg{background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);color:#a9c7f5;border-radius:12px;padding:12px 14px;font-size:13.5px}
+.msg.warn{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:#f3c98b}
+/* form */
+.f-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f-grid .full{grid-column:1/-1}
+.lb{display:block;font-size:12.5px;color:var(--mut);font-weight:600;margin-bottom:6px}
+.lb.req::after{content:" *";color:var(--bad)}
+.inp{width:100%;background:var(--bg2);border:1px solid var(--line2);color:var(--text);padding:11px 13px;border-radius:11px;outline:none;transition:.15s}
+.inp:focus{border-color:var(--acc)}
+textarea.inp{resize:vertical;min-height:74px}
+select.inp-sm{width:auto;padding:7px 10px;font-size:13px;border-radius:9px}
+.sumbox{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.sumbox .row{display:flex;justify-content:space-between;gap:14px;padding:5px 0;font-size:14px}
+.sumbox .row span{color:var(--mut)}
+.sumbox .row b{text-align:right}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--mut);margin-top:14px}
+.consent input{margin-top:3px;accent-color:var(--acc)}
+/* success */
+.okwrap{text-align:center;padding:8px 0}
+.okico{width:64px;height:64px;border-radius:50%;background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.4);color:var(--ok);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 16px}
+.okcode{font-size:24px;font-weight:800;letter-spacing:2px;color:var(--acc2)}
+/* my bookings */
+.my-item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.my-item .l b{display:block}
+.my-item .l span{color:var(--mut);font-size:13px}
+.my-item.cancelled{opacity:.55}
+/* личный кабинет клиента */
+.my-item.clickable{cursor:pointer;transition:.12s}
+.my-item.clickable:hover{border-color:var(--line2);background:rgba(255,255,255,.03)}
+.cab-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:4px 0 16px}
+.cab-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.cab-svc-row{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+.cab-svc-row:first-of-type{border-top:none}
+.cab-svc-row b{flex:1;min-width:0}
+.cab-dtl-row{display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;align-items:flex-start}
+.cab-dtl-row:first-child{border-top:none}
+.cab-dtl-row>span:first-child{min-width:110px;color:var(--dim);flex:none}
+@media(max-width:640px){
+  .cab-stats{grid-template-columns:1fr 1fr;gap:8px}
+  .cab-dtl-row{flex-direction:column;gap:2px}
+  .cab-dtl-row>span:first-child{min-width:0}
+}
+/* badges */
+.st{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.st-new{background:rgba(245,158,11,.14);color:var(--acc2)}
+.st-conf{background:rgba(96,165,250,.14);color:#9ec5fa}
+.st-done{background:rgba(52,211,153,.14);color:var(--ok)}
+.st-cancel{background:rgba(148,163,184,.14);color:#a9b4c6}
+.st-src-on{background:rgba(96,165,250,.14);color:#9ec5fa}
+.st-src-ph{background:rgba(52,211,153,.14);color:var(--ok)}
+.st-swap{background:rgba(251,191,36,.16);color:#fcd34d}
+/* календарь смен (админ): имя мастера в ячейке */
+.cal-cell .master{font-size:11px;font-weight:700;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* faq */
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:13px;margin-bottom:10px;overflow:hidden}
+.faq summary{padding:16px 18px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--acc);font-size:19px}
+.faq details[open] summary::after{content:"–"}
+.faq .faq-b{padding:0 18px 16px;color:var(--mut);font-size:14px}
+/* footer */
+footer{border-top:1px solid var(--line);background:var(--bg2)}
+.ft-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px;padding:44px 0 34px}
+.ft-grid h4{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+.ft-grid p,.ft-grid li{color:var(--mut);font-size:14px}
+.ft-grid ul{list-style:none;margin:0;padding:0}
+.ft-grid li{padding:4px 0}
+.ft-bot{border-top:1px solid var(--line);padding:16px 0;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--dim);font-size:13px}
+/* toasts */
+#toasts{position:fixed;right:16px;bottom:16px;z-index:200;display:flex;flex-direction:column;gap:10px;max-width:min(360px,calc(100vw - 32px))}
+.toast{background:var(--card2);border:1px solid var(--line2);border-left:3px solid var(--info);border-radius:12px;padding:12px 16px;font-size:14px;box-shadow:var(--sh);animation:tin .25s}
+.toast.ok{border-left-color:var(--ok)}
+.toast.err{border-left-color:var(--bad)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(4,6,10,.66);z-index:150;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow:auto}
+.modal.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--line2);border-radius:16px;width:min(600px,100%);box-shadow:var(--sh);animation:tin .2s}
+.m-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.m-head h3{margin:0;font-size:17px}
+.m-x{background:none;border:none;color:var(--mut);font-size:24px;line-height:1;padding:2px 8px}
+.m-x:hover{color:var(--text)}
+.m-body{padding:20px}
+.m-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line);background:var(--bg2);border-radius:0 0 16px 16px}
+/* admin */
+.a-head .hdr-in{height:58px}
+.a-tabs{display:flex;gap:6px;overflow-x:auto;padding:14px 0 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.a-tabs::-webkit-scrollbar{display:none}
+.a-tab{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:11px;padding:9px 16px;font-weight:700;font-size:13.5px;white-space:nowrap}
+.a-tab.on{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.4);color:var(--acc2)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.stat span{color:var(--dim);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.stat b{display:block;font-size:26px;margin-top:6px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.panel h3{font-size:15.5px;margin:0 0 14px}
+.panel.danger{border-color:rgba(248,113,113,.35)}
+.a-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start;margin-top:14px}
+.trow{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #1c2330}
+.trow:last-child{border-bottom:none}
+.chart{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:8px}
+.chart button.cbar{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;transition:.12s;border-radius:10px}
+.chart button.cbar:hover{background:rgba(255,255,255,.05)}
+.chart button.cbar.today .cl{color:var(--acc2)}
+.chart .cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;min-width:0}
+.chart .bar{width:100%;max-width:44px;background:linear-gradient(180deg,var(--acc),var(--acc-d));border-radius:6px 6px 2px 2px;min-height:3px}
+.chart .cl{font-size:11px;color:var(--dim);white-space:nowrap}
+.chart .cv{font-size:12px;color:var(--mut);font-weight:700;min-height:15px}
+.tb{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tb .inp{width:auto}
+.tb .grow{flex:1;min-width:150px}
+.tb .spacer{flex:1}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.tbl{width:100%;border-collapse:collapse;min-width:820px}
+.tbl th{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:11px 12px;border-bottom:1px solid #1c2330;font-size:13.5px;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.tbl .sub{color:var(--dim);font-size:12px}
+.empty{padding:30px;text-align:center;color:var(--dim)}
+.wdays{display:flex;flex-wrap:wrap;gap:8px}
+.wday{position:relative}
+.wday input{position:absolute;opacity:0;pointer-events:none}
+.wday span{display:inline-block;padding:8px 13px;border:1px solid var(--line2);border-radius:10px;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer;user-select:none}
+.wday input:checked+span{border-color:var(--acc);color:var(--acc2);background:rgba(245,158,11,.08)}
+.blist{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.bitem{display:inline-flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;padding:7px 10px;font-size:13px}
+.bitem button{background:none;border:none;color:var(--bad);font-weight:800;padding:0 2px;line-height:1}
+.hint{font-size:12.5px;color:var(--dim);text-align:center;margin-top:14px}
+.err{color:var(--bad);font-size:13px;margin-top:10px}
+/* login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:min(420px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px;box-shadow:var(--sh)}
+.login-card .logo{justify-content:center;margin-bottom:6px}
+/* мастер (сотрудник): бейдж */
+.emp-b{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ec,#60a5fa);color:var(--ec,#60a5fa);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.emp-b i{width:7px;height:7px;border-radius:50%;background:var(--ec,#60a5fa);flex:none}
+/* панель сотрудника */
+.st-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.st-head h2{margin:0;font-size:clamp(20px,4.5vw,26px);font-weight:800}
+.st-shift{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;border:1px solid var(--line2);background:var(--card);color:var(--mut)}
+.st-shift.on{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--ok)}
+.st-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.st-stats[hidden]{display:none}
+.st-stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.st-stat span{color:var(--dim);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block}
+.st-stat b{display:block;font-size:clamp(16px,4.5vw,22px);margin-top:5px;color:var(--acc2);white-space:nowrap}
+.st-stat i{display:block;font-style:normal;color:var(--dim);font-size:11.5px;margin-top:3px}
+.st-filters{margin-bottom:2px}
+.st-filters .chipbtn{padding:9px 13px}
+.st-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.st-card.cancelled{opacity:.55}
+.st-card .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.st-card .row1 .dt{font-weight:800;font-size:15px}
+.st-card .row1 .dt small{display:block;font-weight:600;color:var(--dim);font-size:12px}
+.st-card .cl{color:var(--mut);font-size:13.5px;margin-top:6px}
+.st-card .sv{color:var(--dim);font-size:12.5px;margin-top:3px}
+.st-card .money{font-weight:800;color:var(--acc2);white-space:nowrap}
+.st-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.st-acts .btn{flex:1 1 130px;min-height:42px}
+.bell-badge{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--acc);color:#161006;font-size:11.5px;font-weight:800}
+/* вход сотрудника */
+.emp-chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 18px}
+.emp-chip{flex:1 1 40%;background:var(--bg2);border:1.5px solid var(--line2);border-radius:12px;padding:13px 10px;font-weight:700;color:var(--mut);text-align:center;font-size:14.5px}
+.emp-chip small{display:block;font-weight:600;font-size:11px;color:var(--dim);margin-top:2px}
+.emp-chip.on{border-color:var(--acc);color:var(--acc2);background:rgba(245,158,11,.08)}
+.mut-sm{font-size:12.5px;color:var(--mut);margin:0 0 10px}
+.st-emp-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #1c2330;flex-wrap:wrap}
+.st-emp-row:last-child{border-bottom:none}
+.st-emp-row .nm{flex:1;min-width:140px;font-weight:700}
+.st-emp-row .pin{color:var(--dim);font-size:12.5px}
+/* выручка по сотрудникам */
+.rev-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.rev-row:first-child{border-top:none}
+.rev-row .nums{display:flex;gap:8px 24px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:13px;flex:1;min-width:200px}
+.rev-row .nums b{font-size:15px;color:var(--text)}
+.rev-row .nums .lbl{font-size:12px;color:var(--dim);display:block}
+/* итоговая строка выручки */
+.rev-row.total{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:6px}
+.tot-chip{font-weight:800;white-space:nowrap;padding:6px 12px;border-radius:10px;background:rgba(245,158,11,.14);color:var(--acc2);align-self:center}
+/* календарь сотрудника */
+.cal-nav{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cal-nav b{font-size:15px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.cal-hd{text-align:center;font-size:11.5px;color:var(--dim);font-weight:700;padding:2px 0}
+.cal-cell{background:var(--bg2);border:1.5px solid var(--line);border-radius:10px;min-height:64px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;text-align:left;font:inherit;color:var(--text)}
+.cal-cell.empty{background:transparent;border-color:transparent;cursor:default}
+.cal-cell.weekend{background:rgba(248,113,113,.07)}
+.cal-cell.today{border-color:var(--acc)}
+.cal-cell.sel{border-color:var(--acc2);background:rgba(245,158,11,.08)}
+.cal-cell .d{font-weight:700;font-size:13.5px}
+.cal-cell .cnt{font-size:11px;color:var(--acc2);font-weight:800}
+.cal-cell .loadbar{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:auto}
+.cal-cell .loadbar i{display:block;height:100%;background:var(--acc)}
+.tl-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.tl-row:first-child{border-top:none}
+.tl-row .tl-t{min-width:100px;color:var(--acc2);font-weight:700}
+.tl-row.done{opacity:.6}
+/* печать прайс-листа */
+#printSheet{display:none}
+@media print{
+  html,body{background:#fff!important}
+  body>*:not(#printSheet){display:none!important}
+  #printSheet{display:block!important;color:#111;font-family:'Times New Roman',Georgia,serif}
+  .ps-doc{max-width:190mm;margin:0 auto}
+  .ps-doc h1{text-align:center;font-size:22pt;margin:10mm 0 4mm;font-weight:700}
+  .ps-co{font-size:16pt;font-weight:700}
+  .ps-contacts{font-size:11pt;color:#333;margin-top:1mm}
+  .ps-table{width:100%;border-collapse:collapse;margin-top:6mm;font-size:12pt}
+  .ps-table th{border:1px solid #111;background:#f0f0f0;padding:3mm;text-align:left}
+  .ps-table td{border:1px solid #333;padding:2.6mm;vertical-align:top}
+  .ps-table .num{width:10mm;text-align:center}
+  .ps-table .dur{width:24mm;text-align:center;white-space:nowrap}
+  .ps-table .price{width:30mm;text-align:right;white-space:nowrap;font-weight:700}
+  .ps-table tr.cat td{background:#f7f7f7;font-weight:700}
+  .ps-note{font-size:10pt;color:#444;margin-top:4mm}
+  .ps-foot{margin-top:14mm;page-break-inside:avoid}
+  .ps-date{font-size:12pt;margin-bottom:10mm}
+  .ps-ip{font-size:12pt;margin-top:3mm;margin-bottom:6mm}
+  .ps-sign{display:flex;align-items:flex-end;justify-content:space-between;gap:8mm}
+  .ps-sign .ln{font-size:12pt}
+  .ps-stamp{width:34mm;height:34mm;border:2.5px solid #888;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#888;font-size:10pt;flex:none}
+}
+/* responsive */
+@media(max-width:860px){
+  .nav{display:none}
+  .burger{display:inline-flex}
+  .ft-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:760px){
+  .hide-m{display:none}
+  .tbl{min-width:600px}
+  .tbl td,.tbl th{padding:10px 10px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .stat b{font-size:21px}
+  .a-tabs{padding-top:10px}
+  .a-tab{padding:9px 13px}
+  .tb .inp{min-height:42px}
+}
+@media(max-width:640px){
+  .cal-cell{min-height:50px;padding:4px}
+  .cal-cell .cnt{display:none}
+  .ring{display:none}
+  .ft-grid{grid-template-columns:1fr;gap:20px;padding:32px 0 24px}
+  .a-grid{grid-template-columns:1fr}
+  /* hero: центрируем блоки и убираем переполнение на узких экранах */
+  .hero-in{text-align:center}
+  .hero-sub{margin-left:auto;margin-right:auto}
+  .hero-cta{justify-content:center}
+  .hero-chips{justify-content:center}
+  .hero-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 12px;max-width:400px;margin:30px auto 0}
+  .hstat{text-align:center}
+  .bk-nav{padding:12px 14px}
+  .bk-nav .btn{flex:1}
+  .st-stats{gap:8px}
+  .st-stat{padding:11px 12px}
+}
+@media(max-width:560px){
+  .f-grid{grid-template-columns:1fr}
+  .prog-i{padding:12px 8px;gap:7px}
+  .prog-i span{font-size:11.5px}
+  .tbl{min-width:540px}
+  .inp,select.inp{font-size:16px}
+  .hdr-in{gap:10px;height:56px}
+  .logo{font-size:16px}
+  .logo small{display:none}
+  /* модалки во весь экран */
+  .modal{padding:0}
+  .modal-box{width:100%;min-height:100dvh;border-radius:0;border-left:none;border-right:none;animation:tin .2s}
+  .m-head{position:sticky;top:0;z-index:2;background:var(--card)}
+  .m-foot{position:sticky;bottom:0;border-radius:0;z-index:2}
+  .m-body{padding:16px}
+  .st-acts .btn{flex:1 1 100%}
+  .slot{padding:13px 6px;font-size:15px}
+  .btn{padding:12px 16px}
+  .btn-s{padding:9px 12px;font-size:13px}
+  .login-card{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+<div id="site">
+<header class="hdr" id="siteHead">
+  <div class="container hdr-in">
+    <a class="logo" href="index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="1.6"/></svg>
+      <span><span class="js-co">ШинаСервис</span><small>шиномонтаж · личный кабинет</small></span>
+    </a>
+    <nav class="nav">
+      <a href="index.html#booking">Записаться</a>
+      <a href="index.html">На главную</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="sec alt" id="my" style="padding-top:34px">
+  <div class="container">
+    <div class="sec-head">
+      <h2 class="sec-t">Личный <em>кабинет</em></h2>
+      <p class="sec-d">Вход по номеру телефона и коду подтверждения (SMS или мессенджер MAX): все визиты за всё время, подробности каждой записи, изменение неподтверждённых записей и статистика затрат и услуг.</p>
+    </div>
+    <div id="myAuth" style="max-width:560px">
+      <div class="drow">
+        <div style="flex:1;min-width:200px"><label class="lb req">Номер телефона</label><input class="inp" id="myPhone" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>
+        <button class="btn btn-p" id="myCodeSend">Получить код</button>
+      </div>
+      <p class="hint">Пришлём 6-значный код по SMS или в MAX — канал настраивается администратором. Код действует 5 минут.</p>
+    </div>
+    <div id="myCode" hidden style="max-width:560px">
+      <p class="mut-sm" id="myCodeHint" style="margin:0 0 8px">Код отправлен.</p>
+      <div class="msg" id="myDemo" style="display:none;margin-bottom:8px"></div>
+      <div class="drow">
+        <div style="flex:1;min-width:160px"><label class="lb req">Код из сообщения</label><input class="inp" id="myCodeInp" inputmode="numeric" maxlength="6" placeholder="••••••" style="letter-spacing:7px;font-size:18px"></div>
+        <button class="btn btn-p" id="myCodeOk">Войти</button>
+      </div>
+      <p class="hint"><a href="#" id="myResend">Отправить код ещё раз</a> · <a href="#" id="myBack">изменить номер</a></p>
+    </div>
+    <div id="myList" style="max-width:720px"></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="ft-grid">
+      <div>
+        <div class="logo" style="margin-bottom:12px">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span><span class="js-co">ШинаСервис</span><small>шиномонтаж · личный кабинет</small></span>
+        </div>
+        <p>Здесь хранятся все ваши записи: подтверждение, перенос, отмена и история обслуживания.</p>
+      </div>
+      <div>
+        <h4>Контакты</h4>
+        <ul>
+          <li>📞 <a class="js-phone" href="#">+7 (495) 120-45-67</a></li>
+          <li>📍 <span class="js-addr">г. Москва, ул. Моторная, 12с3</span></li>
+          <li>🕐 <span class="js-hours">Пн–Сб: 09:00–20:00</span></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Запись</h4>
+        <p>Выберите услуги и время онлайн — это быстрее звонка.</p>
+        <a class="btn btn-p btn-s" href="index.html#booking">Записаться онлайн</a>
+      </div>
+    </div>
+    <div class="ft-bot">
+      <div>© <span id="ftYear">2026</span> <span class="js-co">ШинаСервис</span>. Все права защищены.</div>
+    </div>
+  </div>
+</footer>
+</div>
+<div id="toasts"></div>
+<div class="modal" id="modal"><div class="modal-box" id="modalBox"></div></div>
+<noscript><div style="padding:20px;text-align:center">Для работы личного кабинета включите JavaScript.</div></noscript>
+
+<script>
+'use strict';
+'use strict';
+const TITLE_SUFFIX=(document.title||'').split(' — ').slice(1).join(' — ');
+'use strict';
+/* Видимая плашка при любой ошибке скрипта (чтобы сбои не были «немыми») */
+window.addEventListener('error',e=>{
+  try{
+    const t=document.createElement('div');
+    t.style.cssText='position:fixed;top:0;left:0;right:0;z-index:300;background:#7f1d1d;color:#fecaca;font:12.5px/1.4 sans-serif;padding:8px 12px';
+    t.textContent='Ошибка скрипта: '+(e.message||'неизвестная')+' — сообщите об этом разработчику';
+    (document.body||document.documentElement).appendChild(t);
+  }catch(_){}
+});
+/* ================= УТИЛИТЫ ================= */
+const $=s=>document.querySelector(s);
+const $$=s=>Array.from(document.querySelectorAll(s));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad2=n=>String(n).padStart(2,'0');
+const isoOf=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+const todayISO=()=>isoOf(new Date());
+const addDaysISO=(base,n)=>{const d=new Date(base+'T00:00:00');d.setDate(d.getDate()+n);return isoOf(d);};
+const toMin=t=>{const p=t.split(':');return (+p[0])*60+(+p[1]);};
+const toHHMM=m=>pad2(Math.floor(m/60))+':'+pad2(m%60);
+const fmtMoney=n=>Number(n||0).toLocaleString('ru-RU')+' ₽';
+const WD=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+function weekdayRu(isoStr){return WD[new Date(isoStr+'T00:00:00').getDay()];}
+function fmtDateShort(isoStr){return isoStr.split('-').reverse().join('.');}
+function fmtDateHuman(isoStr){const d=new Date(isoStr+'T00:00:00');return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'})+', '+weekdayRu(isoStr);}
+function fmtDT(ts){const d=new Date(ts);return d.toLocaleDateString('ru-RU')+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());}
+
+/* ================= ДАННЫЕ ================= */
+const LS_KEY='shina_db_v1';
+/* Безопасное хранилище: там, где доступ к localStorage/sessionStorage запрещён
+   (например, изолированный предпросмотр), работаем в памяти, а не падаем. */
+function makeSafeStorage(kind){
+  try{
+    const st=window[kind];
+    st.setItem('__sm_probe__','1');
+    st.removeItem('__sm_probe__');
+    return {st,ok:true};
+  }catch(e){
+    const mem=new Map();
+    return {st:{
+      getItem:k=>mem.has(k)?mem.get(k):null,
+      setItem:(k,v)=>{mem.set(k,String(v));},
+      removeItem:k=>{mem.delete(k);}
+    },ok:false};
+  }
+}
+const LS=makeSafeStorage('localStorage');
+const SS=makeSafeStorage('sessionStorage');
+function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<5;i++)s+=c[Math.floor(Math.random()*c.length)];return 'SM-'+s;}
+function defaultDB(){
+  const S=(name,cat,icon,desc,price,dur)=>({name,cat,icon,desc,price,dur,active:true});
+  const services=[
+    S('Сезонная смена шин (4 колеса)','Шиномонтаж','🛞','Снятие и установка колёс, без балансировки',3200,60),
+    S('Смена шин + балансировка (4 колеса)','Шиномонтаж','⚙️','Комплекс: снятие, замена резины, балансировка',4800,90),
+    S('Замена одной шины','Шиномонтаж','🛞','Быстрая замена одного колеса',800,20),
+    S('Балансировка (4 колеса)','Шиномонтаж','⚙️','Грузики и проверка на стенде',1400,30),
+    S('Ремонт прокола','Ремонт','🔧','Жгут или грибок, проверка герметичности',900,30),
+    S('Ремонт бокового пореза','Ремонт','🔧','Кордовая заплатка, сложный ремонт',2600,60),
+    S('Переобувка «на дисках» (4 колеса)','Шиномонтаж','🛞','Смена колёс в сборе, без разбортировки',2000,40),
+    S('Сезонное хранение шин','Доп. услуги','📦','Тёплый склад, страховка, 6 месяцев',3000,15),
+    S('Утилизация старых шин (4 шт.)','Доп. услуги','♻️','Официальная утилизация',600,10),
+    S('Проверка давления и подкачка','Доп. услуги','🧰','Экспресс-обслуживание',0,10)
+  ].map((s,i)=>Object.assign({id:i+1},s));
+  const settings={companyName:'ШинаСервис',phone:'+7 (495) 120-45-67',address:'г. Москва, ул. Моторная, 12с3',
+    workStart:'09:00',workEnd:'20:00',interval:60,posts:2,workDays:[1,2,3,4,5,6],blockedDates:[],adminPass:'admin123',
+    adminPhone:'+7 (900) 100-00-00',panelSlug:'panel',
+    employees:[
+      {id:1,name:'Сергей',pin:'1111',phone:'+7 (900) 100-01-01',color:'#60a5fa',active:true},
+      {id:2,name:'Андрей',pin:'2222',phone:'+7 (900) 100-02-02',color:'#fbbf24',active:true}
+    ],
+    shiftStart:todayISO(),shiftFirst:1,shiftOverrides:{},reportEmail:'',staffSeen:{},
+    smsChannel:'sms',smsWebhook:'',ipTitle:'',
+    stats:[{v:'12',t:'лет работы'},{v:'40 000+',t:'обслуженных авто'},{v:'4',t:'поста шиномонтажа'},{v:'4.9 ★',t:'рейтинг клиентов'}]};
+  const t=todayISO();
+  const mk=(day,time,st,name,phone,car,plate,ids,com,src)=>({
+    code:genCode(),name,phone,car,plate,
+    services:ids.map(i=>{const s=services.find(x=>x.id===i);return{id:s.id,name:s.name,price:s.price};}),
+    date:addDaysISO(t,day),time,status:st,comment:com||'',source:src||'online',
+    total:ids.reduce((a,i)=>a+services.find(x=>x.id===i).price,0),
+    createdAt:Date.now()
+  });
+  const bookings=[
+    mk(0,'11:00','confirmed','Иван Петров','+7 (916) 200-11-22','VW Tiguan','А123ВС77',[2],'','phone'),
+    mk(0,'14:00','new','Мария Соколова','+7 (903) 555-30-40','Mazda CX-5','В456МК77',[1,4],'','online'),
+    mk(0,'16:00','done','Алексей Морозов','+7 (925) 100-20-30','Kia Rio','Е789КХ77',[3],'','phone'),
+    mk(1,'10:00','new','Дмитрий Волков','+7 (926) 777-45-67','Toyota RAV4','К012ОП77',[2,7],'Прошу позвонить перед визитом','online'),
+    mk(-3,'12:00','done','Ольга Кузнецова','+7 (915) 300-40-50','Hyundai Creta','М345РС77',[2,8],'','phone')
+  ];
+  bookings.forEach(b=>{b.employeeId=shiftEmpFor(b.date,settings).id;b.empAuto=true;});
+  return {settings,services,bookings};
+}
+/* --- сотрудники и смены --- */
+function shiftEmpFor(dateISO,settings){
+  let emps=(settings.employees||[]).filter(e=>e.active);
+  if(!emps.length)return null;
+  /* персональная замена на конкретную дату (календарь смен в админке) */
+  const ov=(settings.shiftOverrides||{})[dateISO];
+  if(ov&&ov!=='auto'){const oe=emps.find(x=>x.id===Number(ov));if(oe)return oe;}
+  /* гибкий график: приоритет у сотрудников, выбравших этот день недели себе */
+  const dow=new Date(dateISO+'T00:00:00').getDay();
+  const flex=emps.filter(e=>e.flex&&e.flex.on&&Array.isArray(e.flex.wd)&&e.flex.wd.includes(dow));
+  if(flex.length){
+    const ord=Math.floor(new Date(dateISO+'T00:00:00').getTime()/86400000);
+    return flex[((ord%flex.length)+flex.length)%flex.length];
+  }
+  const fi=emps.findIndex(e=>e.id===Number(settings.shiftFirst));
+  if(fi>0)emps.unshift(emps.splice(fi,1)[0]);
+  const d1=new Date(settings.shiftStart+'T00:00:00');
+  const d2=new Date(dateISO+'T00:00:00');
+  const diff=Math.round((d2-d1)/86400000);
+  return emps[((diff%emps.length)+emps.length)%emps.length];
+}
+/* миграция старых/импортированных данных: сотрудники, смена, привязка записей */
+function normalizeDB(d){
+  const def=defaultDB();
+  if(!Array.isArray(d.settings.employees)||!d.settings.employees.length)d.settings.employees=def.settings.employees;
+  d.settings.employees=d.settings.employees.map((e,i)=>({
+    id:Number(e.id)||i+1,name:String(e.name||'Сотрудник '+(i+1)),
+    pin:String(e.pin||String(1000+i*1111)),color:e.color||['#60a5fa','#fbbf24','#34d399','#f472b6','#a78bfa'][i%5],
+    phone:String(e.phone||'').slice(0,20),
+    active:e.active!==false,
+    flex:(e.flex&&e.flex.on)?{on:true,wd:(Array.isArray(e.flex.wd)?e.flex.wd:[]).map(Number).filter(n=>n>=0&&n<=6)}:{on:false,wd:[]}}));
+  const ids=d.settings.employees.map(e=>e.id);
+  if(!ids.includes(Number(d.settings.shiftFirst)))d.settings.shiftFirst=d.settings.employees[0].id;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d.settings.shiftStart||''))d.settings.shiftStart=def.settings.shiftStart;
+  if(!d.settings.shiftOverrides||typeof d.settings.shiftOverrides!=='object'||Array.isArray(d.settings.shiftOverrides))d.settings.shiftOverrides={};
+  else Object.keys(d.settings.shiftOverrides).forEach(k=>{const v=d.settings.shiftOverrides[k];if(v!=='auto'&&!ids.includes(Number(v)))delete d.settings.shiftOverrides[k];});
+  d.bookings.forEach(b=>{
+    if(!b.employeeId||!ids.includes(b.employeeId)){
+      const e=shiftEmpFor(b.date,d.settings);
+      b.employeeId=e?e.id:d.settings.employees[0].id;
+    }
+    if(b.empAuto===undefined)b.empAuto=true;
+    if(!b.source)b.source='online';
+    if(!Array.isArray(b.notices))b.notices=[];
+  });
+  if(!d.settings.staffSeen||typeof d.settings.staffSeen!=='object')d.settings.staffSeen={};
+  if(!Array.isArray(d.settings.stats))d.settings.stats=defaultDB().settings.stats;
+  else d.settings.stats=d.settings.stats.map(x=>({v:String((x&&x.v)||'').slice(0,40),t:String((x&&x.t)||'').slice(0,60)})).filter(x=>x.v);
+  return d;
+}
+let DB;
+function loadDB(){
+  try{
+    const raw=LS.st.getItem(LS_KEY);
+    if(raw){
+      const d=JSON.parse(raw);
+      if(d&&d.settings&&Array.isArray(d.services)&&Array.isArray(d.bookings)){
+        d.settings=Object.assign(defaultDB().settings,d.settings);
+        return normalizeDB(d);
+      }
+    }
+  }catch(e){}
+  const d=defaultDB();
+  try{LS.st.setItem(LS_KEY,JSON.stringify(d));}catch(e){}
+  return d;
+}
+DB=loadDB();
+/* --- режим БД: если рядом запущен сервер (server/server.js) — общий источник данных
+     в SQLite, видимый всем клиентам/сотрудникам/админу; иначе — localStorage.
+     Сервер определяется автоматически при загрузке (GET /api/ping). --- */
+const SRV={mode:false,authed:null,updated:0,cab:[]};
+const srvFetch=(url,opts)=>fetch(url,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json'},(opts&&opts.headers)||{})}));
+function mergeState(jdb){
+  const base=defaultDB();
+  const d=Object.assign({},base,jdb);
+  d.settings=Object.assign({},base.settings,(jdb&&jdb.settings)||{});
+  DB=normalizeDB(d);
+  return DB;
+}
+/* полный доступ к БД: по ПИН/паролю (code) или по токену после входа по телефону */
+function srvAuthUrl(){
+  return (SRV.authed&&SRV.authed.startsWith('t:'))
+    ?'/api/db?token='+encodeURIComponent(SRV.authed.slice(2))
+    :'/api/db?code='+encodeURIComponent(SRV.authed||'');
+}
+function srvAuthBody(){
+  return (SRV.authed&&SRV.authed.startsWith('t:'))
+    ?{token:SRV.authed.slice(2),db:DB}
+    :{code:SRV.authed,db:DB};
+}
+function srvSaveFull(){
+  srvFetch('/api/db',{method:'POST',body:JSON.stringify(srvAuthBody())})
+    .then(r=>r.json())
+    .then(j=>{if(j&&j.ok){if(j.updated)SRV.updated=j.updated;}else toast('Сервер не принял изменения (проверьте вход)','err');})
+    .catch(()=>toast('Сервер БД недоступен — изменения сохранены только локально','err'));
+}
+/* публичное изменение своей записи (личный кабинет): точечный patch без личных данных других клиентов */
+function srvPushBookingPatch(b){
+  const patch={status:b.status,notices:b.notices||[],date:b.date,time:b.time,services:b.services||[],total:b.total||0,
+    car:b.car||'',plate:b.plate||'',comment:b.comment||'',employeeId:b.employeeId||null,empAuto:b.empAuto!==false,source:b.source||'online'};
+  srvFetch('/api/booking-op',{method:'POST',body:JSON.stringify({code:b.code,patch:patch})})
+    .then(r=>r.json())
+    .then(j=>{if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;}else toast('Сервер не принял изменение записи','err');})
+    .catch(()=>toast('Сервер БД недоступен — изменение не сохранено','err'));
+}
+function srvCreateBooking(b){
+  return srvFetch('/api/bookings',{method:'POST',body:JSON.stringify({booking:b})})
+    .then(r=>r.json())
+    .then(j=>{
+      if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;return true;}
+      toast(j&&j.err==='slot'?'Это время уже занято (по данным БД) — выберите другое':'Сервер БД не принял запись','err');
+      return false;
+    })
+    .catch(()=>{toast('Сервер БД недоступен — запись не сохранена','err');return false;});
+}
+function srvMy(phone){
+  return srvFetch('/api/my?phone='+encodeURIComponent(phone)).then(r=>r.json()).then(j=>{
+    SRV.cab=(j&&j.ok&&Array.isArray(j.bookings))?j.bookings:[];
+    return SRV.cab;
+  }).catch(()=>{SRV.cab=[];return SRV.cab;});
+}
+async function srvSync(){
+  if(!SRV.mode||document.hidden)return;
+  try{
+    const url=SRV.authed?srvAuthUrl():'/api/state';
+    const j=await srvFetch(url).then(r=>r.json());
+    if(j&&j.ok&&j.db&&j.updated!==SRV.updated){
+      mergeState(j.db);SRV.updated=j.updated;
+      notifWatch();
+      if(!document.querySelector('.modal-box')){
+        if(typeof isStaff==='function'&&isStaff())renderStaff();
+        else if(typeof isAdmin==='function'&&isAdmin())renderAdmin();
+        else if(typeof renderCabinet==='function'&&AUTH.phone&&CAB.phone)myLoadCabinet();
+        else{if(typeof renderServicesGrid==='function')renderServicesGrid();if(typeof bkDone!=='undefined'&&!bkDone)renderStep();}
+      }
+    }
+  }catch(e){}
+}
+async function srvDetect(){
+  try{
+    const r=await fetch('/api/ping',{signal:AbortSignal.timeout(2500)});
+    const j=await r.json();
+    return !!(j&&j.ok);
+  }catch(e){return false;}
+}
+const save=()=>{
+  try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}
+  if(SRV.mode&&SRV.authed)srvSaveFull();
+};
+/* --- авторизация по телефону + код подтверждения (SMS или MAX через шлюз;
+     шлюз не настроен — демо-режим, код показывается на экране). --- */
+const AUTH={phone:''};
+const AUTH_KEY='sm_client_auth';
+function authLoad(){
+  try{const j=JSON.parse(LS.st.getItem(AUTH_KEY)||'null');if(j&&j.phone&&j.exp>Date.now())AUTH.phone=j.phone;}catch(e){}
+}
+function authSave(){try{LS.st.setItem(AUTH_KEY,JSON.stringify({phone:AUTH.phone,exp:Date.now()+30*864e5}));}catch(e){}}
+function authClear(){AUTH.phone='';try{LS.st.removeItem(AUTH_KEY);}catch(e){}}
+authLoad();
+let MYC={phone:'',code:'',exp:0,role:null};
+function authCodeSend(phone,purpose,cb){
+  if(SRV.mode){
+    srvFetch('/api/auth/request',{method:'POST',body:JSON.stringify({phone:phone,purpose:purpose})})
+      .then(r=>r.json())
+      .then(j=>cb(j&&j.ok?{ok:true,delivered:!!j.delivered,demo:!!j.demo,code:j.code||'',role:j.role||null}:{ok:false,err:(j&&j.err)||'fail'}))
+      .catch(()=>cb({ok:false,err:'net'}));
+    return;
+  }
+  const code=String(Math.floor(100000+Math.random()*900000));
+  const url=(DB.settings.smsWebhook||'').trim();
+  const text=DB.settings.companyName+': код входа '+code+'. Никому его не сообщайте.';
+  const done=demo=>cb({ok:true,delivered:!demo,demo:demo,code:code,role:null});
+  if(url){
+    try{
+      fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({channel:(DB.settings.smsChannel==='max'?'max':'sms'),phone:phone,text:text,code:code,kind:'auth'})})
+        .then(r=>done(!r.ok)).catch(()=>done(true));
+      return;
+    }catch(e){}
+  }
+  done(true);
+}
+function roleByPhoneLocal(ph){
+  const d=String(ph||'').replace(/\D/g,'');
+  if(String(DB.settings.adminPhone||'').replace(/\D/g,'')===d)return 'admin';
+  const e=DB.settings.employees.find(x=>String(x.phone||'').replace(/\D/g,'')===d&&x.active);
+  return e?String(e.id):'client';
+}
+function authCodeVerify(phone,code,cb){
+  const ph=String(phone||'').replace(/\D/g,'');const c=String(code||'').trim();
+  if(SRV.mode){
+    srvFetch('/api/auth/verify',{method:'POST',body:JSON.stringify({phone:ph,code:c})})
+      .then(r=>r.json()).then(j=>cb(j&&j.ok?{ok:true,role:j.role,token:j.token||''}:{ok:false,err:(j&&j.err)||'fail'}))
+      .catch(()=>cb({ok:false,err:'net'}));
+    return;
+  }
+  if(!MYC.code||MYC.exp<Date.now()||String(MYC.phone||'').replace(/\D/g,'')!==ph)return cb({ok:false,err:'nocode'});
+  if(MYC.code!==c)return cb({ok:false,err:'wrong'});
+  MYC.code='';
+  cb({ok:true,role:roleByPhoneLocal(ph),token:''});
+}
+const svcById=id=>DB.services.find(s=>s.id===Number(id));
+const activeServices=()=>DB.services.filter(s=>s.active);
+const empById=id=>DB.settings.employees.find(e=>e.id===Number(id));
+const activeEmps=()=>DB.settings.employees.filter(e=>e.active);
+const empOn=dateISO=>shiftEmpFor(dateISO,DB.settings);
+const empBadge=empId=>{const e=empById(empId);return e?'<span class="emp-b" style="--ec:'+e.color+'"><i></i>'+esc(e.name)+'</span>':'';};
+/* выручка и диапазоны */
+const liveDone=b=>b.status==='confirmed'||b.status==='done';
+const revSum=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).reduce((a,b)=>a+(b.total||0),0);
+const cntBook=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&liveDone(b)&&b.date>=from&&b.date<=to).length;
+/* факт — выполненные заказы; ожидается — утверждённые (подтверждённые) записи */
+const revDone=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='done'&&b.date>=from&&b.date<=to).reduce((a,b)=>a+(b.total||0),0);
+const cntDone=(empId,from,to)=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='done'&&b.date>=from&&b.date<=to).length;
+const expSum=empId=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='confirmed'&&b.date>=todayISO()).reduce((a,b)=>a+(b.total||0),0);
+const expCnt=empId=>DB.bookings.filter(b=>(!empId||b.employeeId===empId)&&b.status==='confirmed'&&b.date>=todayISO()).length;
+
+/* --- звук и пуш-уведомления о новых онлайн-записях (админ и сотрудник) --- */
+let audioCtx=null;
+function unlockAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    audioCtx=audioCtx||new AC();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+  }catch(e){}
+}
+document.addEventListener('pointerdown',unlockAudio);
+function beep(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    unlockAudio();
+    const ctx=audioCtx||new AC();
+    const tone=(t0,f)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine';o.frequency.setValueAtTime(f,ctx.currentTime+t0);
+      g.gain.setValueAtTime(0.0001,ctx.currentTime+t0);
+      g.gain.exponentialRampToValueAtTime(0.3,ctx.currentTime+t0+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+t0+0.24);
+      o.connect(g);g.connect(ctx.destination);
+      o.start(ctx.currentTime+t0);o.stop(ctx.currentTime+t0+0.26);
+    };
+    tone(0,920);tone(0.26,1240);
+  }catch(e){}
+}
+function ensureNotifPerm(){
+  try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();}catch(e){}
+}
+function pushNotify(title,body){
+  beep();
+  try{
+    if('Notification' in window&&Notification.permission==='granted'){
+      const n=new Notification(title,{body:body,tag:'sm'+Date.now()});
+      n.onclick=()=>{try{window.focus();n.close();}catch(e){}};
+      return;
+    }
+  }catch(e){}
+  toast('🔔 '+title+' — '+body);
+}
+let seenCodes=null;
+function notifWatch(){
+  if(seenCodes===null){seenCodes=DB.bookings.map(b=>b.code);return;}
+  const fresh=[];
+  DB.bookings.forEach(b=>{if(!seenCodes.includes(b.code)){seenCodes.push(b.code);fresh.push(b);}});
+  const online=fresh.filter(b=>b.source==='online');
+  if(!online.length)return;
+  let notified=false;
+  if(typeof isStaff==='function'&&isStaff()){
+    const mine=online.filter(b=>b.employeeId===S.empId);
+    if(mine.length){
+      const b0=mine.slice().sort((a,b)=>b.createdAt-a.createdAt)[0];
+      pushNotify('Новая запись в вашу смену 🔧',b0.name+' · '+fmtDateShort(b0.date)+' '+b0.time+' · '+fmtMoney(b0.total)+(mine.length>1?' (и ещё '+(mine.length-1)+')':''));
+      if(S.filter==='notif'){S.notifIds=S.notifIds||new Set();mine.forEach(x=>S.notifIds.add(x.code));}
+      notified=true;
+    }
+  }else if(typeof isAdmin==='function'&&isAdmin()){
+    const b0=online.slice().sort((a,b)=>b.createdAt-a.createdAt)[0];
+    pushNotify('Новая онлайн-запись 📝',b0.name+' · '+fmtDateShort(b0.date)+' '+b0.time+' · '+fmtMoney(b0.total)+(online.length>1?' (и ещё '+(online.length-1)+')':''));
+    notified=true;
+  }
+  if(notified&&typeof renderAdmin==='function'&&typeof renderStaff==='function'&&!document.querySelector('.modal-box')){
+    if(typeof isStaff==='function'&&isStaff())renderStaff();
+    else if(typeof isAdmin==='function'&&isAdmin())renderAdmin();
+  }
+}
+setInterval(notifWatch,4000);
+
+/* --- автоматические уведомления клиенту: SMS или MAX, без выбора --- */
+function clientChannel(){return DB.settings.smsChannel==='max'?'MAX':'SMS';}
+function notifyClient(b,kind){
+  if(!b||!b.phone)return null;
+  if(!Array.isArray(b.notices))b.notices=[];
+  const ch=clientChannel();
+  const text=kind==='cancelled'
+    ?DB.settings.companyName+': запись '+b.code+' на '+fmtDateShort(b.date)+' '+b.time+' отменена. Записаться заново можно на сайте или по телефону '+DB.settings.phone
+    :clientMsg(b);
+  const notice={when:Date.now(),channel:ch,kind:kind||'',text:text,delivered:false};
+  const url=(DB.settings.smsWebhook||'').trim();
+  if(url){
+    notice.delivered=null;
+    try{
+      fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:ch.toLowerCase(),phone:b.phone,text:text,code:b.code,kind:kind||''})})
+        .then(r=>{notice.delivered=r.ok;save();})
+        .catch(()=>{notice.delivered=false;save();});
+    }catch(e){notice.delivered=false;}
+  }
+  b.notices.push(notice);
+  save();
+  return notice;
+}
+function noticeLine(b){
+  if(!Array.isArray(b.notices)||!b.notices.length)return '';
+  const n=b.notices[b.notices.length-1];
+  const mark=n.delivered===true?'✓ доставлено':(n.delivered===null?'⏳ отправляется через шлюз':'— шлюз не настроен, текст сохранён');
+  return '<div class="sv">📨 '+n.channel+' клиенту · '+fmtDT(n.when)+' '+mark+'</div>';
+}
+function weekRange(){const n=new Date();const dow=(n.getDay()+6)%7;const mon=new Date(n.getFullYear(),n.getMonth(),n.getDate()-dow);return{from:isoOf(mon),to:todayISO()};}
+function monthRange(){const t=todayISO();return{from:t.slice(0,8)+'01',to:t};}
+/* свободные слоты при редактировании (исключая саму запись) */
+function freeTimesFor(dateISO,needDur,excludeCode){
+  const s=DB.settings;
+  if(isClosed(dateISO))return [];
+  const end=toMin(s.workEnd);const dur=Math.max(30,needDur||60);
+  const now=new Date();const isToday=dateISO===todayISO();
+  const cutoff=isToday?now.getHours()*60+now.getMinutes()+15:-1;
+  const out=[];
+  for(let m=toMin(s.workStart);m<end;m+=s.interval){
+    const t=toHHMM(m);
+    const used=liveBookings().filter(x=>x.date===dateISO&&x.time===t&&x.code!==excludeCode).length;
+    if((m>cutoff)&&(s.posts-used>0)&&(m+dur<=end))out.push(t);
+  }
+  return out;
+}
+const liveBookings=()=>DB.bookings.filter(b=>b.status!=='cancelled');
+const activeAt=(date,time)=>liveBookings().filter(b=>b.date===date&&b.time===time).length;
+function isClosed(dateISO){
+  const s=DB.settings;
+  const dow=new Date(dateISO+'T00:00:00').getDay();
+  if(!s.workDays.includes(dow))return true;
+  return (s.blockedDates||[]).includes(dateISO);
+}
+function daySlots(dateISO,needDur,excludeCode){
+  const s=DB.settings;
+  if(isClosed(dateISO))return [];
+  const out=[];const end=toMin(s.workEnd);
+  const now=new Date();const isToday=dateISO===todayISO();
+  const cutoff=isToday?now.getHours()*60+now.getMinutes()+15:-1;
+  const dur=Math.max(30,needDur||60);
+  for(let m=toMin(s.workStart);m<end;m+=s.interval){
+    const t=toHHMM(m);
+    const used=liveBookings().filter(x=>x.date===dateISO&&x.time===t&&x.code!==excludeCode).length;
+    const free=s.posts-used;
+    const blocked=(m<=cutoff)||(free<=0)||(m+dur>end);
+    out.push({t,free,blocked});
+  }
+  return out;
+}
+function slotAvailable(dateISO,time,needDur,excludeCode){
+  const s=DB.settings;
+  if(isClosed(dateISO))return false;
+  const m=toMin(time);const end=toMin(s.workEnd);
+  const dur=Math.max(30,needDur||60);
+  if(m<toMin(s.workStart)||m+dur>end)return false;
+  const now=new Date();
+  if(dateISO===todayISO()&&m<=now.getHours()*60+now.getMinutes()+15)return false;
+  const used=liveBookings().filter(b=>b.date===dateISO&&b.time===time&&b.code!==excludeCode).length;
+  return used<s.posts;
+}
+const ST={new:{t:'Новая',c:'st-new'},confirmed:{t:'Подтверждена',c:'st-conf'},done:{t:'Выполнена',c:'st-done'},cancelled:{t:'Отменена',c:'st-cancel'}};
+const stBadge=st=>{const m=ST[st]||ST.new;return '<span class="st '+m.c+'">'+m.t+'</span>';};
+/* --- источник записи и уведомления (общие для сайта, админки и сотрудника) --- */
+const SRC={online:{t:'онлайн',c:'st-src-on'},phone:{t:'телефон',c:'st-src-ph'}};
+const srcBadge=src=>{const m=SRC[src]||SRC.online;return '<span class="st '+m.c+'">'+m.t+'</span>';};
+const siteUrl=()=>location.href.split('#')[0];
+const normDigits=p=>{let d=String(p||'').replace(/\D/g,'');if(d&&d[0]==='8')d='7'+d.slice(1);if(d&&d[0]!=='7')d='7'+d;return d;};
+const waLink=(phone,msg)=>'https://wa.me/'+normDigits(phone)+'?text='+encodeURIComponent(msg);
+const tgLink=msg=>'https://t.me/share/url?url='+encodeURIComponent(siteUrl())+'&text='+encodeURIComponent(msg);
+function clientMsg(b){
+  const s=DB.settings;const e=b.employeeId&&empById(b.employeeId);
+  return [s.companyName+' — вы записаны ✅',
+    'Когда: '+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time,
+    'Что делаем: '+b.services.map(x=>x.name).join(' + '),
+    'Сумма: '+fmtMoney(b.total),
+    e?'Мастер: '+e.name:'',
+    'Адрес: '+s.address,
+    'Изменить/отменить: '+s.phone,
+    'Код записи: '+b.code].filter(Boolean).join('\n');
+}
+function copyText(txt,okMsg){
+  const done=()=>toast(okMsg||'Текст скопирован');
+  const fallback=()=>{
+    const ta=document.createElement('textarea');ta.value=txt;
+    ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done();}catch(e){toast('Не удалось скопировать','err');}
+    ta.remove();
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,fallback);
+  else fallback();
+}
+const escIcs=v=>String(v).replace(/\\/g,'\\\\').replace(/,/g,'\\,').replace(/;/g,'\\;');
+function downloadIcs(b){
+  const dur=Math.max(30,b.services.reduce((a,x)=>{const s=svcById(x.id);return a+(s?s.dur:30);},0));
+  const endM=Math.min(toMin(b.time)+dur,23*60+59);
+  const day=b.date.replace(/-/g,'');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ShinaService//RU','BEGIN:VEVENT',
+    'UID:'+b.code+'@shinaservice',
+    'DTSTART:'+day+'T'+b.time.replace(':','')+'00',
+    'DTEND:'+day+'T'+toHHMM(endM).replace(':','')+'00',
+    'SUMMARY:'+escIcs(DB.settings.companyName+' — шиномонтаж'),
+    'DESCRIPTION:'+escIcs(b.services.map(x=>x.name).join(', ')+' · '+fmtMoney(b.total)+' · код '+b.code),
+    'LOCATION:'+escIcs(DB.settings.address),
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=b.code+'.ics';
+  document.body.appendChild(a);a.click();a.remove();
+  toast('Напоминание сохранено в календарь');
+}
+function hoursText(){
+  const s=DB.settings;const d=Array.from(new Set(s.workDays)).sort((a,b)=>a-b);
+  if(d.length===7)return 'Ежедневно '+s.workStart+'–'+s.workEnd;
+  if(!d.length)return 'График уточняйте по телефону';
+  const n=WD;let parts=[];let start=d[0],prev=d[0];
+  for(let i=1;i<=d.length;i++){
+    if(d[i]===prev+1){prev=d[i];continue;}
+    parts.push(start===prev?n[start]:n[start]+'–'+n[prev]);
+    start=d[i];prev=d[i];
+  }
+  return parts.join(', ')+': '+s.workStart+'–'+s.workEnd;
+}
+
+/* ================= ТОСТЫ И МОДАЛКИ ================= */
+function toast(msg,type){
+  const el=document.createElement('div');
+  el.className='toast '+(type||'ok');
+  el.textContent=msg;
+  $('#toasts').appendChild(el);
+  setTimeout(()=>{el.style.transition='.3s';el.style.opacity='0';setTimeout(()=>el.remove(),320);},3400);
+}
+function openModal(html){$('#modalBox').innerHTML=html;$('#modal').classList.add('open');document.body.style.overflow='hidden';}
+function closeModal(){$('#modal').classList.remove('open');$('#modalBox').innerHTML='';document.body.style.overflow='';}
+$('#modal').addEventListener('click',e=>{
+  if(e.target===e.currentTarget||e.target.closest('[data-mx]'))closeModal();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function openConfirm(title,text,okLabel,cb){
+  openModal(
+    '<div class="m-head"><h3>'+esc(title)+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body"><p style="margin:0">'+text+'</p></div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="cfOk">'+esc(okLabel||'Подтвердить')+'</button></div>'
+  );
+  $('#cfOk').onclick=()=>{closeModal();cb();};
+}
+function phoneMask(inp){
+  let d=(inp.value||'').replace(/\D/g,'');
+  if(d&&d[0]==='8')d='7'+d.slice(1);
+  if(d&&d[0]!=='7')d='7'+d;
+  d=d.slice(0,11);
+  let out='';
+  if(d.length){out='+7';
+    if(d.length>1)out+=' ('+d.slice(1,4);
+    if(d.length>=5)out+=') '+d.slice(4,7);
+    if(d.length>=8)out+='-'+d.slice(7,9);
+    if(d.length>=10)out+='-'+d.slice(9,11);
+  }
+  inp.value=out;
+}
+const phoneOk=v=>{const d=(v||'').replace(/\D/g,'');return d.length===11&&d[0]==='7';};
+
+/* ================= ПУБЛИЧНАЯ ЧАСТЬ ================= */
+function applySettings(){
+  const s=DB.settings;
+  $$('.js-co').forEach(e=>e.textContent=s.companyName);
+  $$('.js-addr').forEach(e=>e.textContent=s.address);
+  $$('.js-hours').forEach(e=>e.textContent=hoursText());
+  $$('.js-phone').forEach(e=>{e.textContent=s.phone;e.href='tel:'+s.phone.replace(/[^+\d]/g,'');});
+  const hs=$('#heroStats');
+  if(hs){
+    const st=(s.stats||[]).filter(x=>x&&x.v);
+    hs.style.display=st.length?'':'none';
+    hs.innerHTML=st.map(x=>'<div class="hstat"><b>'+esc(x.v)+'</b>'+(x.t?'<span>'+esc(x.t)+'</span>':'')+'</div>').join('');
+  }
+  document.title=s.companyName+(TITLE_SUFFIX?' — '+TITLE_SUFFIX:'');
+}
+/* --- секретный слог скрытой страницы входа персонала --- */
+function panelSlug(){return String(DB.settings.panelSlug||'panel').replace(/[^a-zA-Z0-9-]/g,'')||'panel';}
+
+/* Если хранилище недоступно (например, изолированный предпросмотр) — предупреждаем,
+   что данные не сохранятся, вместо того чтобы молча терять записи. */
+if(!LS.ok){
+  const n=document.createElement('div');
+  n.className='msg warn';
+  n.style.cssText='position:fixed;left:12px;bottom:12px;z-index:210;max-width:340px;font-size:12.5px;box-shadow:var(--sh)';
+  n.textContent='Предпросмотр без доступа к хранилищу браузера: сайт и админка работают, но данные не сохранятся после закрытия. Откройте сайт по обычной ссылке — всё будет сохраняться.';
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(),15000);
+}
+</script>
+<script>
+'use strict';
+/* --- личный кабинет клиента: вход по телефону + коду --- */
+const CAB={phone:''};
+function cabNotice(b,text){
+  b.notices=b.notices||[];
+  b.notices.push({when:Date.now(),channel:'кабинет',kind:'client',text:text,delivered:true});
+}
+function myShowStep(step){
+  $('#myAuth').hidden=step!==1;
+  $('#myCode').hidden=step!==2;
+  if(step!==3)$('#myList').innerHTML='';
+}
+function openMyGate(prefill){
+  if(prefill)$('#myPhone').value=prefill;
+  if(AUTH.phone&&(!prefill||normDigits(prefill)===normDigits(AUTH.phone))){
+    CAB.phone=normDigits(AUTH.phone);
+    myLoadCabinet();
+    myShowStep(3);
+    return;
+  }
+  myShowStep(1);
+  setTimeout(()=>$('#myPhone').focus(),60);
+}
+function myLoadCabinet(){
+  if(SRV.mode&&!SRV.authed){$('#myList').innerHTML='<div class="sub" style="max-width:720px">Загружаем записи из базы…</div>';srvMy(CAB.phone).then(()=>renderCabinet());return;}
+  renderCabinet();
+}
+function mySendCode(){
+  const ph=$('#myPhone').value.trim();
+  if(!phoneOk(ph)){toast('Введите корректный номер телефона','err');return;}
+  const btn=$('#myCodeSend');btn.disabled=true;
+  authCodeSend(ph,'client',r=>{
+    btn.disabled=false;
+    if(!r.ok){toast('Не удалось отправить код — попробуйте позже','err');return;}
+    MYC={phone:ph,code:r.code||'',exp:Date.now()+5*60000,role:'client'};
+    $('#myCodeHint').textContent='Код отправлен на '+ph+'. Действует 5 минут.';
+    const d=$('#myDemo');
+    if(r.demo){d.style.display='';d.className='msg warn';d.textContent='Шлюз уведомлений не настроен — демо-режим: ваш код входа '+r.code;}
+    else d.style.display='none';
+    $('#myCodeInp').value='';
+    myShowStep(2);
+    setTimeout(()=>$('#myCodeInp').focus(),60);
+  });
+}
+function myVerify(){
+  const code=$('#myCodeInp').value.trim();
+  if(!/^\d{6}$/.test(code)){toast('Код состоит из 6 цифр','err');return;}
+  authCodeVerify(MYC.phone,code,r=>{
+    if(!r.ok){
+      const t={nocode:'Срок действия кода истёк — отправьте новый',wrong:'Неверный код — проверьте и попробуйте снова',tries:'Слишком много попыток — запросите новый код',net:'Сервер недоступен — попробуйте позже'}[r.err]||'Не удалось проверить код';
+      toast(t,'err');return;
+    }
+    AUTH.phone=MYC.phone;authSave();
+    CAB.phone=normDigits(AUTH.phone);
+    MYC={phone:'',code:'',exp:0,role:null};
+    myLoadCabinet();
+    toast('Вы вошли в личный кабинет');
+  });
+}
+function cabItems(){
+  if(SRV.mode&&!SRV.authed)return SRV.cab.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  return DB.bookings.filter(b=>normDigits(b.phone)===CAB.phone)
+    .sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+}
+function isFutureBooking(b){
+  const nowM=new Date().getHours()*60+new Date().getMinutes();
+  return b.date>todayISO()||(b.date===todayISO()&&toMin(b.time)>nowM);
+}
+function renderCabinet(){
+  const wrap=$('#myList');
+  const items=cabItems();
+  if(!items.length){
+    wrap.innerHTML='<div class="msg" style="max-width:720px">По этому телефону записей не найдено — создайте первую запись в разделе «Онлайн-запись».</div>'+
+      '<button class="btn btn-o btn-s" data-cabout style="margin-top:6px">Выйти из кабинета</button>';
+    return;
+  }
+  const t=todayISO();
+  const done=items.filter(b=>b.status==='done');
+  const spend=done.reduce((a,b)=>a+(b.total||0),0);
+  const exp=items.filter(b=>b.status==='confirmed'&&b.date>=t).reduce((a,b)=>a+(b.total||0),0);
+  const avg=done.length?Math.round(spend/done.length):0;
+  const upcoming=items.filter(b=>(b.status==='new'||b.status==='confirmed')&&isFutureBooking(b)).length;
+  const svc={};
+  items.filter(b=>b.status!=='cancelled').forEach(b=>(b.services||[]).forEach(s=>{
+    const m=svc[s.id]||(svc[s.id]={name:s.name,cnt:0,sum:0});
+    m.cnt++;m.sum+=s.price||0;
+  }));
+  const svcRows=Object.values(svc).sort((a,b)=>b.sum-a.sum).map(m=>
+    '<div class="cab-svc-row"><b>'+esc(m.name)+'</b><span class="sub">× '+m.cnt+'</span>'+
+    '<b style="flex:none;min-width:84px;text-align:right">'+fmtMoney(m.sum)+'</b></div>').join('');
+  wrap.innerHTML=
+    '<div class="st-stats cab-stats">'+
+      '<div class="st-stat"><span>Визитов выполнено</span><b>'+done.length+'</b><i>за всё время</i></div>'+
+      '<div class="st-stat"><span>Потрачено всего</span><b style="color:var(--ok)">'+fmtMoney(spend)+'</b><i>по выполненным</i></div>'+
+      '<div class="st-stat"><span>Ожидается к оплате</span><b>'+fmtMoney(exp)+'</b><i>утверждённые визиты</i></div>'+
+      '<div class="st-stat"><span>Средний чек</span><b>'+fmtMoney(avg)+'</b><i>за визит · впереди записей: '+upcoming+'</i></div>'+
+    '</div>'+
+    (Object.keys(svc).length?'<div class="cab-box"><h3 style="margin-bottom:2px">Мои услуги</h3><p class="mut-sm" style="margin-bottom:6px">Сколько раз заказывали и на какую сумму — без отменённых.</p>'+svcRows+'</div>':'')+
+    '<h3 style="margin:14px 0 10px">История записей <span class="sub">— нажмите на запись, чтобы открыть подробности</span></h3>'+
+    items.map(b=>{
+      const future=isFutureBooking(b);
+      const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
+      const editable=b.status==='new'&&future;
+      return '<div class="my-item clickable'+(b.status==='cancelled'?' cancelled':'')+'" data-myopen="'+b.code+'" title="Открыть подробности">'+
+        '<div class="l"><b>'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') в '+b.time+' · '+b.code+'</b>'+
+        '<span>'+esc(b.services.map(s=>s.name).join(' + '))+' · '+fmtMoney(b.total)+'</span>'+
+        (editable?'<span style="color:var(--acc2)">✎ Можно изменить, пока администратор не подтвердил</span>':'')+
+        (Array.isArray(b.notices)&&b.notices.length?'<span style="color:var(--acc2)">📨 Подтверждение отправлено по '+clientChannel()+'</span>':'')+'</div>'+
+        '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+
+        (canCancel?'<button class="btn btn-d btn-s" data-cancel="'+b.code+'">Отменить</button>':'')+
+        '</div></div>';
+    }).join('')+
+    '<button class="btn btn-o btn-s" data-cabout style="margin-top:6px">Выйти из кабинета</button>';
+}
+function openMyDetails(code){
+  const src=(SRV.mode&&!SRV.authed)?SRV.cab:DB.bookings;
+  const b=src.find(x=>x.code===code);if(!b)return;
+  const future=isFutureBooking(b);
+  const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
+  const canEdit=b.status==='new'&&future;
+  const emp=empById(b.employeeId);
+  const notices=(b.notices||[]).slice().sort((a,b2)=>(b2.when||0)-(a.when||0)).map(n=>
+    '<div style="margin-bottom:4px">📨 '+esc(n.text||'')+(n.when?' <span class="sub">· '+fmtDT(n.when)+'</span>':'')+'</div>').join('')||'—';
+  openModal(
+    '<div class="m-head"><h3>Запись '+b.code+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body"><div class="cab-dtl">'+
+      '<div class="cab-dtl-row"><span>Статус</span><div style="flex:1;min-width:0">'+stBadge(b.status)+(b.source==='phone'?' <span class="st st-src-ph">создана администратором</span>':' <span class="st st-src-on">онлайн</span>')+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Дата и время</span><div style="flex:1;min-width:0"><b>'+fmtDateHuman(b.date)+', '+b.time+'</b>'+(future?'':' <span class="sub">— визит в прошлом</span>')+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Мастер</span><div style="flex:1;min-width:0">'+(emp?esc(emp.name):'—')+' <span class="sub">· закрепляется по графику смен</span></div></div>'+
+      '<div class="cab-dtl-row"><span>Авто</span><div style="flex:1;min-width:0">'+esc(b.car||'—')+(b.plate?' · '+esc(b.plate):'')+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Услуги</span><div style="flex:1;min-width:0">'+b.services.map(s=>'<div>'+esc(s.name)+' — <b>'+fmtMoney(s.price)+'</b></div>').join('')+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Итого</span><div style="flex:1;min-width:0"><b style="color:var(--acc2);font-size:16px">'+fmtMoney(b.total)+'</b></div></div>'+
+      (b.comment?'<div class="cab-dtl-row"><span>Комментарий</span><div style="flex:1;min-width:0">'+esc(b.comment)+'</div></div>':'')+
+      '<div class="cab-dtl-row"><span>Создана</span><div style="flex:1;min-width:0">'+fmtDT(b.createdAt)+'</div></div>'+
+      '<div class="cab-dtl-row"><span>Уведомления</span><div style="flex:1;min-width:0;font-size:13px">'+notices+'</div></div>'+
+    '</div>'+
+    (canEdit?'<p class="mut-sm" style="margin-top:10px">Запись ещё не подтверждена администратором — вы можете изменить дату, время, услуги и данные авто.</p>':'')+
+    '</div>'+
+    '<div class="m-foot">'+
+      (canEdit?'<button class="btn btn-o" id="myEdit">✎ Изменить</button>':'')+
+      (canCancel?'<button class="btn btn-d" id="myCancel">✗ Отменить запись</button>':'')+
+      '<button class="btn btn-p" data-mx>Закрыть</button></div>');
+  const ed=$('#myEdit');
+  if(ed)ed.onclick=()=>openMyEdit(b);
+  const cn=$('#myCancel');
+  if(cn)cn.onclick=()=>openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
+    b.status='cancelled';
+    cabNotice(b,'Запись отменена клиентом через личный кабинет');
+    if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
+    save();closeModal();renderCabinet();
+    toast('Запись '+b.code+' отменена');
+  });
+}
+function openMyEdit(b){
+  const act=activeServices();
+  const extra=b.services.filter(s=>!act.some(x=>x.id===s.id)).map(s=>Object.assign({},s,{hidden:true}));
+  const all=act.concat(extra);
+  const has=id=>b.services.some(x=>x.id===id);
+  openModal(
+    '<div class="m-head"><h3>Изменить запись '+b.code+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<div class="f-grid">'+
+        '<div><label class="lb req">Дата</label><input type="date" id="ceDate" class="inp" min="'+todayISO()+'" value="'+(b.date>=todayISO()?b.date:todayISO())+'"></div>'+
+        '<div><label class="lb req">Время</label><select id="ceTime" class="inp"><option value="">— выберите дату —</option></select></div>'+
+        '<div><label class="lb req">Имя</label><input id="ceName" class="inp" value="'+esc(b.name)+'"></div>'+
+        '<div><label class="lb">Авто</label><input id="ceCar" class="inp" value="'+esc(b.car||'')+'"></div>'+
+        '<div><label class="lb">Госномер</label><input id="cePlate" class="inp" value="'+esc(b.plate||'')+'"></div>'+
+        '<div class="full"><label class="lb">Комментарий</label><input id="ceCom" class="inp" value="'+esc(b.comment||'')+'" placeholder="Например: шины лежат в багажнике"></div>'+
+      '</div>'+
+      '<label class="lb" style="margin-top:10px">Услуги</label>'+
+      all.map(s=>'<label class="svc-row'+(has(s.id)?' on':'')+'"><input type="checkbox" data-cesvc="'+s.id+'"'+(has(s.id)?' checked':'')+'><span class="cb">✓</span>'+
+        '<span class="n"><b>'+esc(s.name)+'</b><span>≈ '+s.dur+' мин'+(s.hidden?' · услуга скрыта для новых записей':'')+'</span></span>'+
+        '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span></label>').join('')+
+      '<div class="tot"><span class="t2">Итого</span><span id="ceTotal">'+fmtMoney(b.total)+'</span></div>'+
+      '<p class="mut-sm" style="margin-top:8px">Мастер закрепляется по графику смен автоматически. После сохранения администратор увидит изменения в своей панели.</p>'+
+      '<div class="msg warn" id="ceMsg" style="display:none;margin-top:10px"></div>'+
+    '</div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="ceSave">Сохранить</button></div>');
+  const picks=()=>Array.from($('#modalBox').querySelectorAll('[data-cesvc]:checked')).map(i=>svcById(i.dataset.cesvc)).filter(Boolean);
+  const ceDur=()=>Math.max(30,picks().reduce((a,s)=>a+s.dur,0));
+  const updTot=()=>{$('#ceTotal').textContent=fmtMoney(picks().reduce((a,s)=>a+s.price,0));};
+  const loadSlots=()=>{
+    const sel=$('#ceTime');const d=$('#ceDate').value;
+    if(!d){sel.innerHTML='<option value="">— выберите дату —</option>';return;}
+    const slots=daySlots(d,ceDur(),b.code).filter(s=>!s.blocked);
+    sel.innerHTML=slots.length?slots.map(s=>'<option value="'+s.t+'">'+s.t+'</option>').join(''):'<option value="">нет свободных слотов</option>';
+  };
+  $('#modalBox').querySelectorAll('[data-cesvc]').forEach(ch=>ch.addEventListener('change',()=>{
+    ch.closest('.svc-row').classList.toggle('on',ch.checked);
+    updTot();loadSlots();
+  }));
+  $('#ceDate').addEventListener('change',loadSlots);
+  $('#ceSave').onclick=()=>{
+    const name=$('#ceName').value.trim();
+    const date=$('#ceDate').value;const time=$('#ceTime').value;
+    const list=picks();
+    const msg=$('#ceMsg');msg.style.display='none';
+    const err=t=>{msg.textContent=t;msg.style.display='block';};
+    if(name.length<2)return err('Укажите имя');
+    if(!date)return err('Выберите дату');
+    if(!time)return err('Выберите время');
+    if(!list.length)return err('Выберите хотя бы одну услугу');
+    if(!slotAvailable(date,time,ceDur(),b.code))return err('Это время уже занято — выберите другое');
+    const changes=[];
+    if(b.date!==date||b.time!==time)changes.push('время: '+fmtDateShort(b.date)+' '+b.time+' → '+fmtDateShort(date)+' '+time);
+    if(b.services.map(s=>s.name).join(',')!==list.map(s=>s.name).join(','))changes.push('услуги: '+list.map(s=>s.name).join(' + '));
+    b.date=date;b.time=time;b.name=name;
+    b.car=$('#ceCar').value.trim();b.plate=$('#cePlate').value.trim().toUpperCase();b.comment=$('#ceCom').value.trim();
+    b.services=list.map(s=>({id:s.id,name:s.name,price:s.price}));
+    b.total=list.reduce((a,s)=>a+s.price,0);
+    if(b.empAuto){const e=empOn(date);if(e)b.employeeId=e.id;}
+    if(changes.length)cabNotice(b,'Изменено клиентом через личный кабинет ('+changes.join('; ')+')');
+    if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
+    save();closeModal();renderCabinet();
+    toast('Запись '+b.code+' обновлена — администратор увидит изменения');
+  };
+}
+$('#myPhone').addEventListener('input',e=>phoneMask(e.target));
+$('#myPhone').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();mySendCode();}});
+$('#myCodeSend').addEventListener('click',mySendCode);
+$('#myCodeOk').addEventListener('click',myVerify);
+$('#myCodeInp').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();myVerify();}});
+$('#myResend').addEventListener('click',e=>{e.preventDefault();mySendCode();});
+$('#myBack').addEventListener('click',e=>{e.preventDefault();myShowStep(1);});
+$('#myList').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-cancel]');
+  if(btn){
+    const b=DB.bookings.find(x=>x.code===btn.dataset.cancel);if(!b)return;
+    openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
+      b.status='cancelled';
+      cabNotice(b,'Запись отменена клиентом через личный кабинет');
+      if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
+      save();renderCabinet();toast('Запись '+b.code+' отменена');
+    });
+    return;
+  }
+  if(e.target.closest('[data-cabout]')){
+    CAB.phone='';authClear();$('#myPhone').value='';$('#myList').innerHTML='';
+    myShowStep(1);
+    return;
+  }
+  const card=e.target.closest('[data-myopen]');
+  if(card)openMyDetails(card.dataset.myopen);
+});
+</script>
+<script>
+'use strict';
+/* --- отдельная страница личного кабинета --- */
+$('#ftYear').textContent=new Date().getFullYear();
+window.addEventListener('storage',e=>{
+  if(e.key&&e.key!==LS_KEY)return;
+  DB=loadDB();
+  if(CAB.phone&&AUTH.phone)myLoadCabinet();
+});
+(async()=>{
+  $('#myCodeSend').disabled=true;
+  applySettings();
+  if(await srvDetect()){
+    SRV.mode=true;
+    const j=await srvFetch('/api/state').then(r=>r.json()).catch(()=>null);
+    if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;}
+    else if(j&&j.empty){await srvFetch('/api/init',{method:'POST',body:JSON.stringify({db:DB})}).catch(()=>{});}
+    setInterval(srvSync,15000);
+  }
+  $('#myCodeSend').disabled=false;
+  const q=new URLSearchParams(location.search).get('phone')||'';
+  openMyGate(q);
+})();
+
+</script>
+</body>
+</html>

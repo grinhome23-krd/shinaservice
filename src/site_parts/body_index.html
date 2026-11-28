@@ -9,7 +9,7 @@
     <nav class="nav">
       <a href="#services">Услуги</a>
       <a href="#booking">Запись</a>
-      <a href="#my">Личный кабинет</a>
+      <a href="cabinet.html">Личный кабинет</a>
       <a href="#faq">Вопросы</a>
     </nav>
     <button class="burger" id="burgerBtn" aria-label="Меню">☰</button>
@@ -17,7 +17,7 @@
   <nav class="mnav" id="mnav">
     <a href="#services">Услуги</a>
     <a href="#booking">Запись</a>
-    <a href="#my">Личный кабинет</a>
+    <a href="cabinet.html">Личный кабинет</a>
     <a href="#faq">Вопросы</a>
     <a href="#contacts">Контакты</a>
   </nav>
@@ -96,31 +96,6 @@
   </div>
 </section>
 
-<section class="sec alt" id="my">
-  <div class="container">
-    <div class="sec-head">
-      <h2 class="sec-t">Личный <em>кабинет</em></h2>
-      <p class="sec-d">Вход по номеру телефона и коду подтверждения (SMS или мессенджер MAX): все визиты за всё время, подробности каждой записи, изменение неподтверждённых записей и статистика затрат и услуг.</p>
-    </div>
-    <div id="myAuth" style="max-width:560px">
-      <div class="drow">
-        <div style="flex:1;min-width:200px"><label class="lb req">Номер телефона</label><input class="inp" id="myPhone" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>
-        <button class="btn btn-p" id="myCodeSend">Получить код</button>
-      </div>
-      <p class="hint">Пришлём 6-значный код по SMS или в MAX — канал настраивается администратором. Код действует 5 минут.</p>
-    </div>
-    <div id="myCode" hidden style="max-width:560px">
-      <p class="mut-sm" id="myCodeHint" style="margin:0 0 8px">Код отправлен.</p>
-      <div class="msg" id="myDemo" style="display:none;margin-bottom:8px"></div>
-      <div class="drow">
-        <div style="flex:1;min-width:160px"><label class="lb req">Код из сообщения</label><input class="inp" id="myCodeInp" inputmode="numeric" maxlength="6" placeholder="••••••" style="letter-spacing:7px;font-size:18px"></div>
-        <button class="btn btn-p" id="myCodeOk">Войти</button>
-      </div>
-      <p class="hint"><a href="#" id="myResend">Отправить код ещё раз</a> · <a href="#" id="myBack">изменить номер</a></p>
-    </div>
-    <div id="myList" style="max-width:720px"></div>
-  </div>
-</section>
 
 <section class="sec" id="faq">
   <div class="container">
@@ -161,7 +136,6 @@
         <h4>Запись</h4>
         <p>Выберите услуги и время онлайн — это быстрее звонка.</p>
         <a class="btn btn-p btn-s" href="#booking">Записаться онлайн</a>
-        <p class="mut-sm" style="margin:16px 0 0">Для сотрудников и администратора вход доступен только по отдельной ссылке (не публикуется на сайте).</p>
       </div>
     </div>
     <div class="ft-bot">
@@ -171,3 +145,6 @@
   </div>
 </footer>
 </div>
+<div id="toasts"></div>
+<div class="modal" id="modal"><div class="modal-box" id="modalBox"></div></div>
+<noscript><div style="padding:20px;text-align:center">Для работы записи включите JavaScript.</div></noscript>

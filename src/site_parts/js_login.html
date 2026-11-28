@@ -1,0 +1,80 @@
+/* --- вход персонала (скрытая ссылка #<slug>): телефон + код, либо ПИН/пароль --- */
+function pnlSend(){
+  const ph=$('#pnlPhone').value.trim();
+  const errEl=$('#pnlErr');
+  errEl.style.display='none';
+  if(!phoneOk(ph)){errEl.textContent='Введите корректный номер телефона';errEl.style.display='block';return;}
+  /* локальный режим: сразу проверяем, что телефон привязан к персоналу */
+  if(!SRV.mode&&roleByPhoneLocal(ph)==='client'){
+    errEl.textContent='Этот номер не привязан к сотруднику или администратору';
+    errEl.style.display='block';
+    return;
+  }
+  const btn=$('#pnlSend');btn.disabled=true;
+  authCodeSend(ph,'panel',r=>{
+    btn.disabled=false;
+    if(!r.ok){
+      errEl.textContent={notstaff:'Этот номер не привязан к сотруднику или администратору',net:'Сервер недоступен — попробуйте позже'}[r.err]||'Не удалось отправить код — попробуйте позже';
+      errEl.style.display='block';
+      return;
+    }
+    MYC={phone:ph,code:r.code||'',exp:Date.now()+5*60000,role:r.role||null};
+    $('#pnlDemo').style.display=r.demo?'':'none';
+    $('#pnlDemo').textContent='Шлюз уведомлений не настроен — демо-режим: ваш код входа '+r.code;
+    $('#pnlCodeWrap').hidden=false;
+    $('#pnlSend').textContent='Отправить код ещё раз';
+    $('#pnlCode').value='';
+    setTimeout(()=>$('#pnlCode').focus(),60);
+  });
+}
+function pnlVerify(){
+  const errEl=$('#pnlErr');
+  errEl.style.display='none';
+  const code=$('#pnlCode').value.trim();
+  if(!/^\d{6}$/.test(code)){errEl.textContent='Код состоит из 6 цифр';errEl.style.display='block';return;}
+  authCodeVerify(MYC.phone,code,r=>{
+    if(!r.ok){
+      errEl.textContent={nocode:'Срок действия кода истёк — отправьте новый',wrong:'Неверный код — попробуйте ещё раз',tries:'Слишком много попыток — отправьте код заново',net:'Сервер недоступен'}[r.err]||'Не удалось проверить код';
+      errEl.style.display='block';
+      return;
+    }
+    if(!r.role||r.role==='client'){errEl.textContent='Этот номер не привязан к сотруднику или администратору';errEl.style.display='block';return;}
+    SS.st.removeItem('sm_code');
+    if(SRV.mode&&r.token){SRV.authed='t:'+r.token;SS.st.setItem('sm_token',r.token);}
+    $('#pnlCode').value='';
+    ensureNotifPerm();
+    if(r.role==='admin'){SS.st.setItem('sm_admin','1');enterAdmin(true);}
+    else{SS.st.setItem('sm_staff',String(r.role));enterStaff(true);}
+  });
+}
+async function tryLogin(codeRaw){
+  const code=(codeRaw||'').trim();
+  const errEl=$('#loginErr');
+  if(!code){errEl.style.display='block';return;}
+  if(SRV.mode){
+    let j=null;
+    try{j=await srvFetch('/api/db?code='+encodeURIComponent(code)).then(r=>r.json());}catch(e){}
+    if(j&&j.ok&&j.db){
+      mergeState(j.db);SRV.authed=code;SRV.updated=j.updated;
+      SS.st.setItem('sm_code',code);
+      $('#loginCode').value='';errEl.style.display='none';
+      ensureNotifPerm();
+      if(j.role==='admin'){SS.st.setItem('sm_admin','1');enterAdmin(true);}
+      else{SS.st.setItem('sm_staff',String(j.role));enterStaff(true);}
+      return;
+    }
+    if(j&&j.err==='badcode'){errEl.style.display='block';return;}
+    toast('Сервер БД недоступен','err');return;
+  }
+  const emp=DB.settings.employees.find(e=>e.active&&e.pin===code);
+  if(emp){$('#loginCode').value='';errEl.style.display='none';SS.st.setItem('sm_staff',String(emp.id));ensureNotifPerm();enterStaff(true);return;}
+  if(code===DB.settings.adminPass){$('#loginCode').value='';errEl.style.display='none';SS.st.setItem('sm_admin','1');ensureNotifPerm();enterAdmin(true);return;}
+  errEl.style.display='block';
+}
+$('#loginBack').addEventListener('click',showSite);
+$('#loginBtn').addEventListener('click',()=>tryLogin($('#loginCode').value));
+$('#loginCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryLogin($('#loginCode').value);}});
+$('#pnlSend').addEventListener('click',pnlSend);
+$('#pnlOk').addEventListener('click',pnlVerify);
+$('#pnlCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();pnlVerify();}});
+$('#pnlPhone').addEventListener('input',e=>phoneMask(e.target));

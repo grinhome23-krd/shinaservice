@@ -30,7 +30,8 @@ const { DatabaseSync } = require('node:sqlite');
 
 const PORT = Number(process.env.PORT) || 3000;
 const DB_PATH = path.join(__dirname, 'data', 'shina.db');
-const INDEX = path.join(__dirname, '..', 'index.html');
+const ROOT = path.join(__dirname, '..');
+const INDEX = path.join(ROOT, 'index.html');
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new DatabaseSync(DB_PATH);
@@ -272,17 +273,22 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, updated, role });
     }
 
-    /* --- сайт --- */
-    if (req.method === 'GET' && (p === '/' || p === '/index.html')) {
-      try {
-        const html = fs.readFileSync(INDEX);
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(html);
-        return;
-      } catch (e) {
-        res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('index.html не найден — соберите сайт: python3 src/build_site.py src/site_parts index.html');
-        return;
+    /* --- сайт: 5 статических страниц из корня репозитория --- */
+    if (req.method === 'GET') {
+      const PAGES = { '/': 'index.html', '/index.html': 'index.html', '/cabinet.html': 'cabinet.html',
+        '/panel.html': 'panel.html', '/admin.html': 'admin.html', '/staff.html': 'staff.html' };
+      const file = PAGES[p];
+      if (file) {
+        try {
+          const html = fs.readFileSync(path.join(ROOT, file));
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          res.end(html);
+          return;
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end(file + ' не найден — соберите сайт: python3 src/build_site.py src/site_parts .');
+          return;
+        }
       }
     }
     send(res, 404, { ok: false, err: 'notfound' });

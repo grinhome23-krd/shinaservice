@@ -1,0 +1,42 @@
+/* --- отдельная страница управления (admin.html): вход только с сессией --- */
+function showSite(){location.href='index.html';}
+function showLogin(){location.replace('panel.html');}
+function enterAdmin(msg){$('#admin').hidden=false;window.scrollTo(0,0);renderAdmin();if(msg)toast('Добро пожаловать!');}
+function logout(){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_code');SS.st.removeItem('sm_token');showSite();}
+$('#aSite').addEventListener('click',showSite);
+$('#aLogout').addEventListener('click',logout);
+$('#ftYear').textContent=new Date().getFullYear();
+window.addEventListener('storage',e=>{
+  if(e.key&&e.key!==LS_KEY)return;
+  DB=loadDB();
+  notifWatch();
+  if(isAdmin()&&!document.querySelector('.modal-box'))renderAdmin();
+});
+(async()=>{
+  applySettings();
+  if(await srvDetect()){
+    SRV.mode=true;
+    const j=await srvFetch('/api/state').then(r=>r.json()).catch(()=>null);
+    if(j&&j.ok&&j.db)mergeState(j.db);
+    else if(j&&j.empty){await srvFetch('/api/init',{method:'POST',body:JSON.stringify({db:DB})}).catch(()=>{});}
+    /* в режиме БД действительны только сессии с входом: телефон-токен или ПИН/пароль */
+    const tk=SS.st.getItem('sm_token');
+    if(tk){
+      const r2=await srvFetch('/api/db?token='+encodeURIComponent(tk)).then(r=>r.json()).catch(()=>null);
+      if(r2&&r2.ok&&r2.db){mergeState(r2.db);SRV.authed='t:'+tk;SRV.updated=r2.updated;
+        if(r2.role==='admin')SS.st.setItem('sm_admin','1');
+      }else SS.st.removeItem('sm_token');
+    }
+    const sc=SS.st.getItem('sm_code');
+    if(sc){
+      const r3=await srvFetch('/api/db?code='+encodeURIComponent(sc)).then(r=>r.json()).catch(()=>null);
+      if(r3&&r3.ok&&r3.db){mergeState(r3.db);SRV.authed=sc;SRV.updated=r3.updated;
+        if(r3.role==='admin')SS.st.setItem('sm_admin','1');
+      }else SS.st.removeItem('sm_code');
+    }
+    if(!SRV.authed)SS.st.removeItem('sm_admin');
+    setInterval(srvSync,15000);
+  }
+  if(isAdmin())enterAdmin(false);
+  else location.replace('panel.html');
+})();

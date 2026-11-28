@@ -1,0 +1,273 @@
+const S={empId:null,filter:'today',view:'list',calMonth:null,calDay:null};
+const isStaff=()=>{const id=SS.st.getItem('sm_staff');const e=id&&empById(id);return !!(e&&e.active);};
+function enterStaff(msg){
+  S.empId=Number(SS.st.getItem('sm_staff'));
+  const e=empById(S.empId);
+  if(!e||!e.active){SS.st.removeItem('sm_staff');SS.st.removeItem('sm_code');showLogin();return;}
+  $('#staff').hidden=false;window.scrollTo(0,0);
+  renderStaff();
+  const fresh=unseenForStaff(e).length;
+  if(msg)toast('Здравствуйте, '+e.name+(fresh?'! 🔔 Новых записей: '+fresh:'!'));
+}
+function staffEmp(){return empById(S.empId);}
+/* --- уведомления сотрудника о новых записях --- */
+function unseenForStaff(e){
+  const seen=(DB.settings.staffSeen||{})[e.id]||0;
+  return DB.bookings.filter(b=>b.employeeId===e.id&&b.status!=='cancelled'&&(b.createdAt||0)>seen);
+}
+function markStaffSeen(){
+  const e=staffEmp();if(!e)return;
+  DB.settings.staffSeen=DB.settings.staffSeen||{};
+  DB.settings.staffSeen[e.id]=Date.now();save();
+}
+function renderStaff(){
+  const e=staffEmp();if(!e){showLogin();return;}
+  const t=todayISO();
+  const eToday=empOn(t);
+  const onShift=eToday&&eToday.id===e.id;
+  const fresh=unseenForStaff(e);
+  $('#stHead').innerHTML=
+    '<div><h2>'+esc(e.name)+' · ваши записи</h2>'+
+    '<span class="st-shift'+(onShift?' on':'')+'">'+(onShift?'🔧 Сегодня ваша смена':'😴 Сегодня выходной · работает '+(eToday?esc(eToday.name):'—'))+'</span></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+      '<button class="btn '+(S.view==='cal'?'btn-o':'btn-p')+' btn-s" data-stview="list">📋 Список</button>'+
+      '<button class="btn '+(S.view==='cal'?'btn-p':'btn-o')+' btn-s" data-stview="cal">📅 Календарь</button>'+
+      '<button class="btn '+(S.filter==='notif'?'btn-p':'btn-o')+' btn-s" data-stact="bell" title="Записи, которые вы ещё не видели">🔔 Новые'+(fresh.length?' <span class="bell-badge">'+fresh.length+'</span>':'')+'</button>'+
+      '<button class="btn btn-p btn-s" data-stact="add">+ Записать клиента</button>'+
+      (onShift?'<button class="btn btn-o btn-s" data-stact="end" title="Отчёт за смену — PDF, почта и MAX администратору">🏁 Завершить смену</button>':'')+
+    '</div>';
+  const cal=S.view==='cal';
+  if(!cal){
+    const wr=weekRange(),mr=monthRange();
+    const fact=(label,from,to)=>
+      '<div class="st-stat"><span>'+label+'</span><b>'+fmtMoney(revDone(e.id,from,to))+'</b><i>выполнено заказов: '+cntDone(e.id,from,to)+'</i></div>';
+    $('#stStats').innerHTML=fact('Факт за день',t,t)+fact('Факт за неделю',wr.from,wr.to)+fact('Факт за месяц',mr.from,mr.to)+
+      '<div class="st-stat"><span>Ожидается (утверждено)</span><b style="color:var(--acc2)">'+fmtMoney(expSum(e.id))+'</b><i>записей: '+expCnt(e.id)+'</i></div>';
+  }
+  $('#stStats').hidden=cal;
+  $('#stFilters').hidden=cal;
+  $('#stList').hidden=cal;
+  $('#stCal').hidden=!cal;
+  if(cal)renderStaffCal(e);
+  const F=[['today','Сегодня'],['upcoming','Будущие'],['new','Новые'],['notif','🔔 Непросмотренные'],['done','Выполненные'],['all','Все']];
+  $('#stFilters').innerHTML=F.map(f=>'<button class="chipbtn'+(S.filter===f[0]?' on':'')+'" data-stf="'+f[0]+'">'+f[1]+'</button>').join('');
+  const nowM=new Date().getHours()*60+new Date().getMinutes();
+  let items=DB.bookings.filter(b=>b.employeeId===e.id);
+  if(S.filter==='today')items=items.filter(b=>b.date===t&&b.status!=='cancelled');
+  if(S.filter==='upcoming')items=items.filter(b=>b.date>=t&&b.status!=='cancelled');
+  if(S.filter==='new')items=items.filter(b=>b.status==='new');
+  if(S.filter==='notif')items=items.filter(b=>S.notifIds&&S.notifIds.has(b.code));
+  if(S.filter==='done')items=items.filter(b=>b.status==='done');
+  if(S.filter==='notif')items.sort((a,b)=>b.createdAt-a.createdAt);
+  else items.sort((a,b)=>(S.filter==='all'?-1:1)*(a.date+a.time).localeCompare(b.date+b.time));
+  $('#stList').innerHTML=items.length?items.map(b=>{
+    const canAct=b.status==='new'||b.status==='confirmed';
+    const act=(b.status==='new'?'<button class="btn btn-ok btn-s" data-sok="'+b.code+'">✓ Подтвердить</button>':'')+
+      (b.status==='confirmed'?'<button class="btn btn-p btn-s" data-sdone="'+b.code+'">🏁 Завершить</button>':'')+
+      (canAct?'<button class="btn btn-o btn-s" data-sedit="'+b.code+'">✎ Изменить</button>'+
+      '<button class="btn btn-d btn-s" data-scancel="'+b.code+'">✗ Отменить</button>':'');
+    return '<div class="st-card'+(b.status==='cancelled'?' cancelled':'')+'">'+
+      '<div class="row1"><div class="dt">'+fmtDateShort(b.date)+' ('+weekdayRu(b.date)+') · '+b.time+'<small>'+b.code+' · '+(b.source==='phone'?'по телефону':'онлайн')+' · создана '+fmtDT(b.createdAt)+'</small></div>'+
+      '<div style="display:flex;gap:8px;align-items:center">'+stBadge(b.status)+'<span class="money">'+fmtMoney(b.total)+'</span></div></div>'+
+      '<div class="cl">'+esc(b.name)+' · <a href="tel:'+b.phone.replace(/[^+\d]/g,'')+'">'+esc(b.phone)+'</a>'+(b.car?' · '+esc(b.car):'')+(b.plate?' · '+esc(b.plate):'')+'</div>'+
+      '<div class="sv">'+esc(b.services.map(s=>s.name).join(' + '))+' · ≈ '+b.services.reduce((a,s)=>{const x=svcById(s.id);return a+(x?x.dur:30);},0)+' мин</div>'+
+      (b.comment?'<div class="sv">💬 '+esc(b.comment)+'</div>':'')+
+      noticeLine(b)+
+      (act?'<div class="st-acts">'+act+'</div>':'')+
+    '</div>';
+  }).join(''):'<div class="empty">Записей в этом фильтре нет</div>';
+}
+/* --- календарный вид: месяц с загруженностью и таймлайн дня --- */
+function renderStaffCal(e){
+  const s=DB.settings;
+  const [y,m]=S.calMonth.split('-').map(Number);
+  const first=new Date(y,m-1,1);
+  const monName=(first.toLocaleDateString('ru-RU',{month:'long',year:'numeric'}).charAt(0).toUpperCase())+first.toLocaleDateString('ru-RU',{month:'long',year:'numeric'}).slice(1);
+  const startDow=(first.getDay()+6)%7;
+  const dim=new Date(y,m,0).getDate();
+  const cap=Math.max(60,toMin(s.workEnd)-toMin(s.workStart));
+  const durOf=b=>b.services.reduce((a,x)=>{const sv=svcById(x.id);return a+(sv?sv.dur:30);},0);
+  let cells='';
+  for(let i=0;i<startDow;i++)cells+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const iso=y+'-'+pad2(m)+'-'+pad2(d);
+    const items=DB.bookings.filter(b=>b.employeeId===e.id&&b.date===iso&&b.status!=='cancelled');
+    const load=Math.min(100,Math.round(items.reduce((a,b)=>a+durOf(b),0)/cap*100));
+    const wdow=(new Date(iso+'T00:00:00').getDay()+6)%7;
+    cells+='<button type="button" class="cal-cell'+(wdow>=5?' weekend':'')+(iso===todayISO()?' today':'')+(iso===S.calDay?' sel':'')+'" data-calday="'+iso+'">'+
+      '<span class="d">'+d+'</span>'+
+      (items.length?'<span class="cnt">'+items.length+' запис.</span>':'<span class="cnt" style="color:var(--dim)">свободно</span>')+
+      '<span class="loadbar"><i style="width:'+load+'%"></i></span>'+
+    '</button>';
+  }
+  $('#stCal').innerHTML=
+    '<div class="cal-nav">'+
+      '<button class="btn btn-o btn-s" data-calnav="-1">‹</button>'+
+      '<b>'+monName+'</b>'+
+      '<button class="btn btn-o btn-s" data-calnav="1">›</button>'+
+      '<button class="btn btn-o btn-s" data-caltoday="1">Сегодня</button>'+
+      '<span class="sub" style="margin-left:auto">полоска — занятость рабочего дня ('+s.workStart+'–'+s.workEnd+')</span>'+
+    '</div>'+
+    '<div class="cal-grid">'+['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(x=>'<div class="cal-hd">'+x+'</div>').join('')+cells+'</div>'+
+    (S.calDay?calDayTimeline(e,S.calDay):'<div class="sub" style="margin-top:12px">Выберите день — покажу записи по времени</div>');
+}
+function calDayTimeline(e,iso){
+  const s=DB.settings;
+  const items=DB.bookings.filter(b=>b.date===iso&&b.status!=='cancelled').sort((a,b)=>a.time.localeCompare(b.time));
+  const dayEmp=empOn(iso);
+  const who=dayEmp?(dayEmp.id===e.id?'ваша смена':'смена: '+dayEmp.name):'нет активных мастеров';
+  const rows=items.map(b=>{
+    const endM=Math.min(toMin(s.workEnd),toMin(b.time)+b.services.reduce((a,x)=>{const sv=svcById(x.id);return a+(sv?sv.dur:30);},0));
+    return '<div class="tl-row'+(b.status==='done'?' done':'')+'"><b class="tl-t">'+b.time+'–'+pad2(Math.floor(endM/60))+':'+pad2(endM%60)+'</b>'+
+      '<div style="flex:1;min-width:0"><div>'+esc(b.name)+(b.car?' <span class="sub">· '+esc(b.car)+'</span>':'')+'</div>'+
+      '<div class="sub">'+esc(b.services.map(x=>x.name).join(' + '))+' · '+fmtMoney(b.total)+'</div>'+
+      (b.employeeId?empBadge(b.employeeId):'')+'</div>'+
+      stBadge(b.status)+'</div>';
+  }).join('');
+  return '<div style="margin-top:14px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'+
+      '<h3 style="margin:0">Загруженность: '+fmtDateHuman(iso)+' <span class="sub">· '+who+'</span></h3>'+
+      '<button class="btn btn-p btn-s" data-calbook="1" style="margin-left:auto">+ Записать на этот день</button></div>'+
+    '<p class="mut-sm" style="margin-bottom:8px">Записать клиента можно в любую смену, в том числе коллеге, — мастер выбирается в форме.</p>'+
+    (rows||'<div class="empty">Записей нет — день свободен</div>')+'</div>';
+}
+$('#stCal').addEventListener('click',e=>{
+  if(e.target.closest('[data-calbook]')){openManualBooking({staff:true,date:S.calDay});return;}
+  const nav=e.target.closest('[data-calnav]');
+  if(nav){
+    const [y,m]=S.calMonth.split('-').map(Number);
+    const d=new Date(y,m-1+Number(nav.dataset.calnav),1);
+    S.calMonth=d.getFullYear()+'-'+pad2(d.getMonth()+1);S.calDay=null;
+    renderStaff();return;
+  }
+  const td=e.target.closest('[data-caltoday]');
+  if(td){S.calMonth=todayISO().slice(0,7);S.calDay=todayISO();renderStaff();return;}
+  const cd=e.target.closest('[data-calday]');
+  if(cd){S.calDay=cd.dataset.calday;renderStaff();}
+});
+$('#stFilters').addEventListener('click',e=>{
+  const b=e.target.closest('[data-stf]');if(!b)return;
+  S.filter=b.dataset.stf;
+  if(S.filter==='notif'){S.notifIds=new Set(unseenForStaff(staffEmp()).map(x=>x.code));markStaffSeen();}
+  renderStaff();
+});
+$('#stHead').addEventListener('click',e=>{
+  const v=e.target.closest('[data-stview]');
+  if(v){
+    S.view=v.dataset.stview;
+    if(S.view==='cal'){if(!S.calMonth)S.calMonth=todayISO().slice(0,7);if(!S.calDay)S.calDay=todayISO();}
+    renderStaff();return;
+  }
+  const b=e.target.closest('[data-stact]');if(!b)return;
+  if(b.dataset.stact==='add')openManualBooking({staff:true});
+  if(b.dataset.stact==='end')openShiftReport();
+  if(b.dataset.stact==='bell'){
+    S.filter='notif';
+    S.notifIds=new Set(unseenForStaff(staffEmp()).map(x=>x.code));
+    markStaffSeen();renderStaff();
+  }
+});
+/* --- завершение смены: отчёт (текст, PDF, почта, MAX) --- */
+function shiftReportText(e){
+  const t=todayISO();const s=DB.settings;
+  const items=DB.bookings.filter(b=>b.date===t&&b.employeeId===e.id).sort((a,b)=>a.time.localeCompare(b.time));
+  const cnt=st=>items.filter(b=>b.status===st);
+  const L=[];
+  L.push(s.companyName+' — ОТЧЁТ ЗА СМЕНУ');
+  L.push('Мастер: '+e.name);
+  L.push('Дата: '+fmtDateShort(t)+' ('+weekdayRu(t)+'), время работы '+s.workStart+'–'+s.workEnd);
+  L.push('──────────────────');
+  L.push('Записей за смену: '+items.length);
+  items.forEach((b,i)=>{
+    L.push((i+1)+') '+b.time+' · '+b.name+' · '+(b.phone||'')+(b.car?' · '+b.car:'')+(b.plate?' '+b.plate:''));
+    L.push('    Услуги: '+b.services.map(x=>x.name).join(' + ')+' — '+fmtMoney(b.total)+' · '+ST[b.status].t);
+    if(b.comment)L.push('    Комментарий: '+b.comment);
+  });
+  L.push('──────────────────');
+  L.push('Выполнено: '+cnt('done').length+' на '+fmtMoney(cnt('done').reduce((a,b)=>a+b.total,0)));
+  L.push('Подтверждено (ожидается оплата): '+cnt('confirmed').length+' на '+fmtMoney(cnt('confirmed').reduce((a,b)=>a+b.total,0)));
+  L.push('Новых (нужен звонок клиенту): '+cnt('new').length+' · Отменено: '+cnt('cancelled').length);
+  L.push('Отчёт сформирован автоматически: '+fmtDT(Date.now()));
+  return L.join('\n');
+}
+function printShiftReport(e){
+  const t=todayISO();const s=DB.settings;
+  const items=DB.bookings.filter(b=>b.date===t&&b.employeeId===e.id).sort((a,b)=>a.time.localeCompare(b.time));
+  const sum=st=>items.filter(b=>b.status===st).reduce((a,b)=>a+b.total,0);
+  const rows=items.map(b=>
+    '<tr><td class="num">'+b.time+'</td><td><b>'+esc(b.name)+'</b><br><span style="font-size:10pt;color:#444">'+esc(b.phone)+(b.car?' · '+esc(b.car):'')+(b.plate?' · '+esc(b.plate):'')+'</span></td>'+
+    '<td>'+esc(b.services.map(x=>x.name).join(' + '))+'</td><td class="price">'+fmtMoney(b.total)+'</td><td>'+ST[b.status].t+'</td></tr>').join('')||
+    '<tr><td colspan="5" style="text-align:center;color:#777">Записей за смену нет</td></tr>';
+  $('#printSheet').innerHTML=
+    '<div class="ps-doc">'+
+      '<div class="ps-co">'+esc(s.companyName)+'</div>'+
+      '<div class="ps-contacts">'+esc(s.address)+' · тел. '+esc(s.phone)+'</div>'+
+      '<h1>Отчёт за смену · '+fmtDateShort(t)+' ('+weekdayRu(t)+')</h1>'+
+      '<p style="font-size:11pt">Мастер: <b>'+esc(e.name)+'</b> · время работы: '+s.workStart+'–'+s.workEnd+'</p>'+
+      '<table class="ps-table"><thead><tr><th class="num">Время</th><th>Клиент</th><th>Услуги</th><th class="price">Сумма</th><th>Статус</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<table class="ps-table" style="margin-top:10px"><tbody>'+
+        '<tr><td>Выполнено</td><td class="price">'+items.filter(b=>b.status==='done').length+' × '+fmtMoney(sum('done'))+'</td></tr>'+
+        '<tr><td>Подтверждено (ожидается оплата)</td><td class="price">'+items.filter(b=>b.status==='confirmed').length+' × '+fmtMoney(sum('confirmed'))+'</td></tr>'+
+        '<tr><td>Новые / отменённые</td><td class="price">'+items.filter(b=>b.status==='new').length+' / '+items.filter(b=>b.status==='cancelled').length+'</td></tr>'+
+      '</tbody></table>'+
+      '<div class="ps-foot"><div class="ps-sign"><div class="ln">Мастер ______________________ /'+esc(e.name)+'/<br><span style="font-size:9pt;color:#555">подпись</span></div></div></div>'+
+    '</div>';
+  window.print();
+}
+function sendMaxReport(text,btn){
+  const url=(DB.settings.smsWebhook||'').trim();
+  if(!url){toast('MAX-шлюз не настроен — Настройки → «Уведомления клиентам»','err');return;}
+  if(btn){btn.disabled=true;btn.textContent='Отправка…';}
+  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({channel:'max',phone:DB.settings.phone,text:text,code:'shift-report',kind:'shift-report'})})
+    .then(r=>{
+      toast(r.ok?'💬 Отчёт отправлен администратору в MAX':'Шлюз вернул ошибку при отправке в MAX',r.ok?'':'err');
+      if(btn){btn.disabled=false;btn.textContent='💬 Отправить в MAX';}
+    })
+    .catch(()=>{
+      toast('Не удалось связаться со шлюзом MAX','err');
+      if(btn){btn.disabled=false;btn.textContent='💬 Отправить в MAX';}
+    });
+}
+function mailReport(text,e){
+  const em=(DB.settings.reportEmail||'').trim();
+  if(!em){toast('Укажите почту для отчётов — Настройки → «Данные автосервиса»','err');return;}
+  location.href='mailto:'+em+'?subject='+encodeURIComponent('Отчёт за смену '+fmtDateShort(todayISO())+' — '+e.name)+'&body='+encodeURIComponent(text);
+}
+function openShiftReport(){
+  const e=staffEmp();if(!e)return;
+  const t=todayISO();
+  const text=shiftReportText(e);
+  const items=DB.bookings.filter(b=>b.date===t&&b.employeeId===e.id);
+  const hasMail=!!(DB.settings.reportEmail||'').trim();
+  const hasHook=!!(DB.settings.smsWebhook||'').trim();
+  openModal(
+    '<div class="m-head"><h3>🏁 Завершение смены · '+fmtDateShort(t)+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<p class="mut-sm">Смена мастера <b>'+esc(e.name)+'</b>, записей за день: '+items.length+'. '+
+        (hasHook?'Отчёт отправлен в MAX администратору. ':'MAX-шлюз не настроен — отправьте кнопкой «💬 Отправить в MAX». ')+
+        (hasMail?'Почтовый клиент открыт с письмом для '+esc(DB.settings.reportEmail)+'.':'Почта для отчётов не указана (Настройки → «Данные автосервиса»).')+'</p>'+
+      '<pre style="white-space:pre-wrap;font-size:12.5px;line-height:1.5;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px;max-height:260px;overflow:auto;margin:10px 0">'+esc(text)+'</pre>'+
+      '<p class="mut-sm">PDF: в диалоге печати браузера выберите «Сохранить как PDF».</p>'+
+    '</div>'+
+    '<div class="m-foot" style="flex-wrap:wrap">'+
+      '<button class="btn btn-p" id="srPdf">📄 PDF</button>'+
+      '<button class="btn btn-o" id="srMail">✉️ На почту</button>'+
+      '<button class="btn btn-o" id="srMax">💬 Отправить в MAX</button>'+
+      '<button class="btn btn-o" data-mx>Закрыть</button>'+
+    '</div>');
+  $('#srPdf').onclick=()=>printShiftReport(e);
+  $('#srMail').onclick=()=>mailReport(text,e);
+  $('#srMax').onclick=ev=>sendMaxReport(text,ev.currentTarget);
+  if(hasHook)sendMaxReport(text,null);
+  if(hasMail)mailReport(text,e);
+}
+$('#stList').addEventListener('click',e=>{
+  const ok=e.target.closest('[data-sok]'),dn=e.target.closest('[data-sdone]'),ed=e.target.closest('[data-sedit]'),cn=e.target.closest('[data-scancel]');
+  const code=(ok&&ok.dataset.sok)||(dn&&dn.dataset.sdone)||(ed&&ed.dataset.sedit)||(cn&&cn.dataset.scancel);
+  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  if(ok){b.status='confirmed';notifyClient(b,'confirmed');save();renderStaff();toast(b.code+' подтверждена · клиенту отправлено '+clientChannel());}
+  if(dn){b.status='done';save();renderStaff();toast(b.code+' выполнена — молодец!');}
+  if(ed)openBookingEdit(b.code,{staff:true});
+  if(cn){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> ('+esc(b.name)+') на '+fmtDateHuman(b.date)+', '+b.time+' будет отменена, клиент получит уведомление.','Отменить',()=>{
+    b.status='cancelled';notifyClient(b,'cancelled');save();renderStaff();toast('Запись отменена · клиент уведомлён');});}
+});

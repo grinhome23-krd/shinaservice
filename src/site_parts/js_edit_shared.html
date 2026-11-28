@@ -1,0 +1,207 @@
+function openBookingDetails(code){
+  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  openModal(
+    '<div class="m-head"><h3>Запись '+b.code+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<div class="sumbox">'+
+        '<div class="row"><span>Статус</span><b>'+stBadge(b.status)+'</b></div>'+
+        '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(b.date)+', '+b.time+'</b></div>'+
+        '<div class="row"><span>Клиент</span><b>'+esc(b.name)+'</b></div>'+
+        '<div class="row"><span>Телефон</span><b><a href="tel:'+b.phone.replace(/[^+\d]/g,'')+'">'+esc(b.phone)+'</a></b></div>'+
+        '<div class="row"><span>Авто</span><b>'+esc([b.car,b.plate].filter(Boolean).join(', ')||'—')+'</b></div>'+
+        '<div class="row"><span>Услуги</span><b>'+esc(b.services.map(s=>s.name).join(' + '))+'</b></div>'+
+        '<div class="row"><span>Мастер</span><b>'+(b.employeeId&&empById(b.employeeId)?empBadge(b.employeeId):'—')+'</b></div>'+
+        '<div class="row"><span>Сумма</span><b>'+fmtMoney(b.total)+'</b></div>'+
+        (b.comment?'<div class="row"><span>Комментарий</span><b>'+esc(b.comment)+'</b></div>':'')+
+        '<div class="row"><span>Источник</span><b>'+srcBadge(b.source)+'</b></div>'+
+        '<div class="row"><span>Создана</span><b>'+fmtDT(b.createdAt)+'</b></div>'+
+      '</div>'+
+      '<div class="msg" style="margin-top:10px"><b>📨 Уведомления клиенту</b>'+
+        (Array.isArray(b.notices)&&b.notices.length
+          ?b.notices.map(n=>'<div style="margin-top:6px;font-size:13px">'+n.channel+' · '+fmtDT(n.when)+' · '+(n.delivered===true?'✓ доставлено':(n.delivered===null?'⏳ отправляется через шлюз':'⚠ шлюз не настроен — текст сохранён'))+': '+esc(n.text)+'</div>').join('')
+          :'<div style="margin-top:6px">пока не отправлялись</div>')+
+      '</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
+        '<button class="btn btn-o btn-s" id="bdEdit">✎ Изменить запись</button>'+
+        ['new','confirmed','done','cancelled'].map(x=>'<button class="btn '+(b.status===x?'btn-p':'btn-o')+' btn-s" data-setst="'+x+'">'+ST[x].t+'</button>').join('')+
+      '</div>'+
+    '</div>');
+  $('#bdEdit').onclick=()=>openBookingEdit(b.code,{staff:false});
+  $$('#modalBox [data-setst]').forEach(btn=>btn.onclick=()=>{
+    const was=b.status;b.status=btn.dataset.setst;
+    if(b.status!==was&&(b.status==='confirmed'||b.status==='cancelled'))notifyClient(b,b.status);
+    save();closeModal();renderAdmin();toast('Статус изменён: '+ST[b.status].t);
+  });
+}
+/* --- редактирование записи (админ и сотрудник) --- */
+function openBookingEdit(code,opts){
+  opts=opts||{};
+  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  const list=activeServices();
+  if(!list.length){toast('Сначала добавьте услуги','err');return;}
+  const isStaffView=!!opts.staff;
+  const ebsvc=()=>list.map(s=>'<label class="svc-row"><input type="checkbox" data-ebsvc="'+s.id+'"'+(b.services.some(x=>x.id===s.id)?' checked':'')+'><span class="cb">✓</span>'+
+    '<span class="n"><b>'+esc(s.name)+'</b><span>≈ '+s.dur+' мин</span></span>'+
+    '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span></label>').join('');
+  const emps=DB.settings.employees.filter(e=>e.active);
+  openModal(
+    '<div class="m-head"><h3>Изменить запись '+b.code+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<div class="f-grid">'+
+        '<div><label class="lb req">Дата</label><input type="date" id="ebDate" class="inp" min="'+todayISO()+'" value="'+b.date+'"></div>'+
+        '<div><label class="lb req">Время</label><select id="ebTime" class="inp"></select></div>'+
+        '<div><label class="lb req">Имя</label><input id="ebName" class="inp" value="'+esc(b.name)+'"></div>'+
+        '<div><label class="lb req">Телефон</label><input id="ebPhone" class="inp" inputmode="tel" value="'+esc(b.phone)+'"></div>'+
+        '<div><label class="lb">Авто</label><input id="ebCar" class="inp" value="'+esc(b.car||'')+'"></div>'+
+        '<div><label class="lb">Госномер</label><input id="ebPlate" class="inp" value="'+esc(b.plate||'')+'"></div>'+
+        (isStaffView?'':'<div class="full"><label class="lb">Мастер</label><select id="ebEmp" class="inp">'+
+          '<option value="auto">Авто (по графику смен)</option>'+
+          emps.map(e=>'<option value="'+e.id+'"'+(b.employeeId===e.id?' selected':'')+'>'+esc(e.name)+'</option>').join('')+
+        '</select></div>')+
+        '<div class="full"><label class="lb">Комментарий</label><input id="ebCom" class="inp" value="'+esc(b.comment||'')+'"></div>'+
+      '</div>'+
+      '<label class="lb" style="margin-top:14px">Услуги</label>'+
+      ebsvc()+
+      '<div class="tot"><span class="t2">Итого</span><span id="ebTotal">'+fmtMoney(b.total)+'</span></div>'+
+      '<div class="msg warn" id="ebMsg" style="display:none;margin-top:10px"></div>'+
+    '</div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="ebSave">Сохранить</button></div>');
+  const picks=()=>Array.from($('#modalBox').querySelectorAll('[data-ebsvc]:checked')).map(i=>svcById(i.dataset.ebsvc)).filter(Boolean);
+  const ebDur=()=>Math.max(30,picks().reduce((a,s)=>a+s.dur,0));
+  const updTot=()=>{$('#ebTotal').textContent=fmtMoney(picks().reduce((a,s)=>a+s.price,0));};
+  const loadTimes=()=>{
+    const sel=$('#ebTime');const d=$('#ebDate').value;
+    const free=freeTimesFor(d,ebDur(),b.code);
+    const sameDate=d===b.date;
+    const opts2=sameDate&&!free.includes(b.time)?[b.time].concat(free):free;
+    sel.innerHTML=opts2.length?opts2.map(t=>'<option value="'+t+'"'+(t===b.time&&sameDate?' selected':'')+'>'+t+(t===b.time&&sameDate?' (текущее)':'')+'</option>').join(''):'<option value="">нет свободных слотов</option>';
+    if(sameDate&&opts2.includes(b.time))sel.value=b.time;
+  };
+  $('#modalBox').querySelectorAll('[data-ebsvc]').forEach(ch=>ch.addEventListener('change',()=>{updTot();loadTimes();}));
+  $('#ebDate').addEventListener('change',loadTimes);
+  $('#ebPhone').addEventListener('input',e=>phoneMask(e.target));
+  loadTimes();
+  $('#ebSave').onclick=()=>{
+    const msg=$('#ebMsg');msg.style.display='none';
+    const err=t=>{msg.textContent=t;msg.style.display='block';};
+    const name=$('#ebName').value.trim();
+    const date=$('#ebDate').value;const time=$('#ebTime').value;
+    const pl=picks();
+    if(name.length<2)return err('Укажите имя');
+    if(!phoneOk($('#ebPhone').value))return err('Некорректный телефон');
+    if(!date)return err('Выберите дату');
+    if(!time)return err('Выберите время');
+    if(!pl.length)return err('Выберите хотя бы одну услугу');
+    const slotChanged=date!==b.date||time!==b.time;
+    if(slotChanged&&!slotAvailable(date,time,ebDur(),b.code))return err('Это время уже занято — выберите другое');
+    b.name=name;b.phone=$('#ebPhone').value;b.car=$('#ebCar').value.trim();
+    b.plate=$('#ebPlate').value.trim().toUpperCase();b.comment=$('#ebCom').value.trim();
+    b.services=pl.map(s=>({id:s.id,name:s.name,price:s.price}));
+    b.total=pl.reduce((a,s)=>a+s.price,0);
+    b.date=date;b.time=time;
+    if(!isStaffView&&$('#ebEmp')){
+      const v=$('#ebEmp').value;
+      if(v==='auto'){b.empAuto=true;const e=empOn(date);b.employeeId=e?e.id:null;}
+      else{b.empAuto=false;b.employeeId=Number(v);}
+    }else if(b.empAuto!==false){
+      const e=empOn(date);b.employeeId=e?e.id:null;
+    }
+    save();closeModal();
+    if(isStaffView)renderStaff();else renderAdmin();
+    toast('Запись '+b.code+' обновлена');
+  };
+}
+function openManualBooking(opts){
+  opts=opts||{};
+  const isStaffView=!!opts.staff;
+  const preEmp=opts.date?empOn(opts.date):null;
+  const list=activeServices();
+  if(!list.length){toast('Сначала добавьте услуги','err');return;}
+  openModal(
+    '<div class="m-head"><h3>'+(isStaffView?'Новая запись по звонку':'Новая запись (вручную)')+'</h3><button class="m-x" data-mx>×</button></div>'+
+    '<div class="m-body">'+
+      '<div class="f-grid">'+
+        '<div><label class="lb req">Дата</label><input type="date" id="mbDate" class="inp" min="'+todayISO()+'" value="'+(opts.date||'')+'"></div>'+
+        '<div><label class="lb req">Время</label><select id="mbTime" class="inp"><option value="">— выберите дату —</option></select></div>'+
+        '<div><label class="lb req">Имя</label><input id="mbName" class="inp"></div>'+
+        '<div><label class="lb req">Телефон</label><input id="mbPhone" class="inp" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>'+
+        '<div><label class="lb">Авто</label><input id="mbCar" class="inp"></div>'+
+        '<div><label class="lb">Госномер</label><input id="mbPlate" class="inp"></div>'+
+        '<div class="full"><label class="lb">Комментарий</label><input id="mbCom" class="inp"></div>'+
+        '<div class="full"><label class="lb">Мастер (в чью смену записать)</label><select id="mbEmp" class="inp">'+
+          '<option value="auto">Авто — мастер по графику смен</option>'+
+          DB.settings.employees.filter(e=>e.active).map(e=>{
+            const pre=preEmp&&preEmp.id===e.id;
+            return '<option value="'+e.id+'"'+(pre?' selected':'')+'>'+esc(e.name)+(pre?' — на смене в этот день':'')+'</option>';
+          }).join('')+
+        '</select></div>'+
+      '</div>'+
+      '<p class="mut-sm" style="margin-top:8px">Запись по звонку можно создать в любую смену, включая коллегу, — выберите мастера в списке. Запись появится в его панели с уведомлением.</p>'+
+      '<label class="lb" style="margin-top:6px">Услуги</label>'+
+      list.map(s=>'<label class="svc-row"><input type="checkbox" data-mbsvc="'+s.id+'"><span class="cb">✓</span>'+
+        '<span class="n"><b>'+esc(s.name)+'</b><span>≈ '+s.dur+' мин</span></span>'+
+        '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span></label>').join('')+
+      '<div class="tot"><span class="t2">Итого</span><span id="mbTotal">0 ₽</span></div>'+
+      '<div class="msg warn" id="mbMsg" style="display:none;margin-top:10px"></div>'+
+    '</div>'+
+    '<div class="m-foot"><button class="btn btn-o" data-mx>Отмена</button><button class="btn btn-p" id="mbSave">Создать запись</button></div>');
+  const picks=()=>Array.from($('#modalBox').querySelectorAll('[data-mbsvc]:checked')).map(i=>svcById(i.dataset.mbsvc)).filter(Boolean);
+  const mbDur=()=>Math.max(30,picks().reduce((a,s)=>a+s.dur,0));
+  const loadMbSlots=()=>{
+    const sel=$('#mbTime');const d=$('#mbDate').value;
+    if(!d){sel.innerHTML='<option value="">— выберите дату —</option>';return;}
+    const slots=daySlots(d,mbDur()).filter(s=>!s.blocked);
+    sel.innerHTML=slots.length?slots.map(s=>'<option value="'+s.t+'">'+s.t+'</option>').join(''):'<option value="">нет свободных слотов</option>';
+  };
+  const updTot=()=>{$('#mbTotal').textContent=fmtMoney(picks().reduce((a,s)=>a+s.price,0));};
+  $('#modalBox').querySelectorAll('[data-mbsvc]').forEach(ch=>ch.addEventListener('change',()=>{
+    ch.closest('.svc-row').classList.toggle('on',ch.checked);
+    updTot();loadMbSlots();
+  }));
+  $('#mbDate').addEventListener('change',loadMbSlots);
+  $('#mbPhone').addEventListener('input',e=>phoneMask(e.target));
+  if(opts.date)loadMbSlots();
+  $('#mbSave').onclick=()=>{
+    const name=$('#mbName').value.trim();
+    const date=$('#mbDate').value;const time=$('#mbTime').value;
+    const list2=picks();
+    const msg=$('#mbMsg');msg.style.display='none';
+    const err=t=>{msg.textContent=t;msg.style.display='block';};
+    if(name.length<2)return err('Укажите имя');
+    if(!phoneOk($('#mbPhone').value))return err('Некорректный телефон');
+    if(!date)return err('Выберите дату');
+    if(!time)return err('Выберите время');
+    if(!list2.length)return err('Выберите хотя бы одну услугу');
+    if(!slotAvailable(date,time,mbDur()))return err('Это время уже занято — обновите слоты');
+    const nb={code:genCode(),name,phone:$('#mbPhone').value,car:$('#mbCar').value.trim(),
+      plate:$('#mbPlate').value.trim().toUpperCase(),
+      services:list2.map(s=>({id:s.id,name:s.name,price:s.price})),
+      date,time,comment:$('#mbCom').value.trim(),source:'phone',
+      total:list2.reduce((a,s)=>a+s.price,0),status:'confirmed',createdAt:Date.now(),
+      employeeId:assignEmp($('#mbEmp').value,date),empAuto:$('#mbEmp').value==='auto'};
+    DB.bookings.push(nb);
+    save();closeModal();
+    const nn=notifyClient(nb,'confirmed');
+    if(isStaffView)renderStaff();else renderAdmin();
+    toast('Запись '+nb.code+' создана · клиенту автоматически отправлено '+(nn?nn.channel:'уведомление'));
+  };
+}
+function assignEmp(selValue,date){
+  if(selValue!=='auto'){const e=empById(selValue);if(e)return e.id;}
+  const e=empOn(date);return e?e.id:null;
+}
+/* --- уведомление клиенту при ручной записи отправляется автоматически (notifyClient) --- */
+if($('#btnAddBook'))$('#btnAddBook').addEventListener('click',openManualBooking);
+function exportCsv(){
+  const list=filteredBookings();
+  if(!list.length){toast('Нет записей для экспорта','err');return;}
+  const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const head=['Код','Дата','Время','Статус','Источник','Клиент','Телефон','Авто','Госномер','Услуги','Мастер','Сумма','Комментарий','Создана'].map(cell).join(';');
+  const rows=list.map(b=>[b.code,b.date,b.time,ST[b.status]?ST[b.status].t:b.status,(SRC[b.source]||SRC.online).t,b.name,b.phone,b.car,b.plate,
+    b.services.map(s=>s.name).join(', '),(b.employeeId&&empById(b.employeeId)?empById(b.employeeId).name:''),b.total,b.comment,fmtDT(b.createdAt)].map(cell).join(';')).join('\r\n');
+  const blob=new Blob(['\ufeff'+head+'\r\n'+rows],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookings_'+todayISO()+'.csv';
+  document.body.appendChild(a);a.click();a.remove();
+  toast('CSV выгружен: '+list.length+' записей');
+}
+if($('#btnCsv'))$('#btnCsv').addEventListener('click',exportCsv);

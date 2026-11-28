@@ -1,0 +1,209 @@
+function renderServicesGrid(){
+  const list=activeServices();
+  const g=$('#svcGrid');
+  if(!list.length){g.innerHTML='<div class="msg" style="grid-column:1/-1">Услуги временно недоступны — позвоните нам: <a class="js-phone" href="#"></a></div>';applySettings();return;}
+  g.innerHTML=list.map(s=>
+    '<article class="svc-card">'+
+      '<div class="svc-ico">'+(s.icon||'🛞')+'</div>'+
+      '<h3>'+esc(s.name)+'</h3>'+
+      '<p>'+esc(s.desc||'')+'</p>'+
+      '<div class="svc-meta"><div><div class="svc-price">'+(s.price===0?'Бесплатно':fmtMoney(s.price))+'</div><div class="svc-dur">≈ '+s.dur+' мин</div></div>'+
+      '<button class="btn btn-o btn-s" data-choose="'+s.id+'">Выбрать</button></div>'+
+    '</article>').join('');
+}
+
+/* --- мастер записи --- */
+const bk={step:1,services:new Set(),date:'',time:'',name:'',phone:'',car:'',plate:'',comment:'',agree:false};
+let bkDone=false;
+function selList(){return Array.from(bk.services).map(i=>svcById(i)).filter(Boolean);}
+function selCalc(){const l=selList();return{total:l.reduce((a,s)=>a+s.price,0),dur:Math.max(30,l.reduce((a,s)=>a+s.dur,0))};}
+function renderProg(){
+  [1,2,3].forEach(i=>{
+    const el=$('#pi'+i);
+    el.classList.toggle('act',!bkDone&&bk.step===i);
+    el.classList.toggle('done',bkDone||bk.step>i);
+    el.querySelector('b').textContent=(bkDone||bk.step>i)?'✓':i;
+  });
+}
+function totHtml(){const c=selCalc();return '<div class="tot"><div><div>Итого: '+fmtMoney(c.total)+'</div><div class="t2">Время работ: ≈ '+c.dur+' мин</div></div></div>';}
+function step1Html(){
+  const list=activeServices();
+  if(!list.length)return '<div class="msg warn">Услуги временно недоступны. Позвоните нам: <a class="js-phone" href="#"></a></div>';
+  return list.map(s=>
+    '<label class="svc-row '+(bk.services.has(s.id)?'on':'')+'">'+
+      '<input type="checkbox" data-svc="'+s.id+'" '+(bk.services.has(s.id)?'checked':'')+'>'+
+      '<span class="cb">✓</span>'+
+      '<span class="n"><b>'+esc(s.name)+'</b><span>'+esc(s.desc||'')+' · ≈ '+s.dur+' мин</span></span>'+
+      '<span class="p">'+(s.price===0?'0 ₽':fmtMoney(s.price))+'</span>'+
+    '</label>').join('')+totHtml();
+}
+function step2Html(){
+  return '<div class="drow">'+
+    '<div><label class="lb req">Дата визита</label><input type="date" id="bkDate" class="inp" min="'+todayISO()+'" value="'+bk.date+'"></div>'+
+    '<div class="chips"><button type="button" class="chipbtn" data-qd="0">Сегодня</button><button type="button" class="chipbtn" data-qd="1">Завтра</button></div>'+
+  '</div><div id="slotArea"></div>';
+}
+function step3Html(){
+  const l=selList();const c=selCalc();
+  return '<div class="sumbox">'+
+    '<div class="row"><span>Услуги</span><b>'+esc(l.map(s=>s.name).join(' + '))+'</b></div>'+
+    '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(bk.date)+', '+bk.time+'</b></div>'+
+    '<div class="row"><span>Длительность</span><b>≈ '+c.dur+' мин</b></div>'+
+    '<div class="row"><span>К оплате</span><b style="color:var(--acc2)">'+fmtMoney(c.total)+'</b></div>'+
+  '</div>'+
+  '<div class="f-grid">'+
+    '<div><label class="lb req">Ваше имя</label><input id="bkName" class="inp" placeholder="Иван" value="'+esc(bk.name)+'"></div>'+
+    '<div><label class="lb req">Телефон</label><input id="bkPhone" class="inp" inputmode="tel" placeholder="+7 (___) ___-__-__" value="'+esc(bk.phone)+'"></div>'+
+    '<div><label class="lb">Автомобиль</label><input id="bkCar" class="inp" placeholder="Kia Rio" value="'+esc(bk.car)+'"></div>'+
+    '<div><label class="lb">Госномер</label><input id="bkPlate" class="inp" placeholder="А123ВС77" value="'+esc(bk.plate)+'"></div>'+
+    '<div class="full"><label class="lb">Комментарий</label><textarea id="bkCom" class="inp" placeholder="Например: шины лежат в багажнике">'+esc(bk.comment)+'</textarea></div>'+
+  '</div>'+
+  '<label class="consent"><input type="checkbox" id="bkAgree" '+(bk.agree?'checked':'')+'><span>Согласен(на) на обработку персональных данных и на подтверждение записи по телефону.</span></label>';
+}
+function renderSlots(){
+  const area=$('#slotArea');if(!area)return;
+  if(!bk.date){area.innerHTML='<div class="msg">Выберите дату визита — покажем свободное время.</div>';return;}
+  if(isClosed(bk.date)){area.innerHTML='<div class="msg warn">'+fmtDateHuman(bk.date)+' — нерабочий день. Выберите другую дату или позвоните нам: <a class="js-phone" href="#"></a></div>';applySettings();return;}
+  const c=selCalc();
+  const slots=daySlots(bk.date,c.dur);
+  const freeSlots=slots.filter(s=>!s.blocked);
+  let h='<div class="lb" style="margin-bottom:8px">Свободное время · визит ≈ '+c.dur+' мин</div>';
+  if(!freeSlots.length){
+    h+='<div class="msg warn">На '+fmtDateHuman(bk.date)+' свободных слотов нет. Выберите другую дату или позвоните нам.</div>';
+  }else{
+    h+='<div class="slots">'+slots.map(s=>
+      '<button type="button" class="slot '+(bk.time===s.t?'sel':'')+'" data-t="'+s.t+'" '+(s.blocked?'disabled title="Занято или время прошло"':'')+'>'+s.t+
+      ((!s.blocked&&s.free<DB.settings.posts)?'<span class="fr">'+s.free+'</span>':'')+'</button>').join('')+'</div>';
+  }
+  area.innerHTML=h;
+}
+function renderStep(){
+  renderProg();
+  const p=$('#bkPane');
+  $('#bkBack').style.visibility=bk.step===1?'hidden':'visible';
+  $('#bkNext').textContent=bk.step===3?'Подтвердить запись':'Далее →';
+  if(bk.step===1){
+    p.innerHTML=step1Html();
+    if(bk.step===1&&p.querySelector('.js-phone'))applySettings();
+    p.querySelectorAll('[data-svc]').forEach(ch=>{
+      ch.addEventListener('change',()=>{
+        const id=Number(ch.dataset.svc);
+        if(ch.checked)bk.services.add(id);else bk.services.delete(id);
+        renderStep();
+      });
+    });
+  }else if(bk.step===2){
+    p.innerHTML=step2Html();
+    $('#bkDate').addEventListener('change',e=>{bk.date=e.target.value||'';bk.time='';renderSlots();});
+    p.querySelectorAll('[data-qd]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        bk.date=addDaysISO(todayISO(),Number(btn.dataset.qd));bk.time='';
+        $('#bkDate').value=bk.date;renderSlots();
+      });
+    });
+    renderSlots();
+  }else if(bk.step===3){
+    p.innerHTML=step3Html();
+    $('#bkName').addEventListener('input',e=>bk.name=e.target.value);
+    $('#bkPhone').addEventListener('input',e=>{phoneMask(e.target);bk.phone=e.target.value;});
+    $('#bkCar').addEventListener('input',e=>bk.car=e.target.value);
+    $('#bkPlate').addEventListener('input',e=>bk.plate=e.target.value);
+    $('#bkCom').addEventListener('input',e=>bk.comment=e.target.value);
+    $('#bkAgree').addEventListener('change',e=>bk.agree=e.target.checked);
+  }
+}
+function goNext(){
+  if(bkDone){return;}
+  if(bk.step===1){
+    if(!bk.services.size){toast('Выберите хотя бы одну услугу','err');return;}
+    bk.step=2;renderStep();snapWizard();
+  }else if(bk.step===2){
+    if(!bk.date){toast('Выберите дату визита','err');return;}
+    if(!bk.time){toast('Выберите время визита','err');return;}
+    bk.step=3;renderStep();snapWizard();
+  }else submitBooking();
+}
+function goBack(){if(bkDone)return;if(bk.step>1){bk.step--;renderStep();snapWizard();}}
+$('#bkPane').addEventListener('click',e=>{
+  const b=e.target.closest('.slot:not(:disabled)');
+  if(!b)return;
+  bk.time=b.dataset.t;
+  $$('#bkPane .slot').forEach(x=>x.classList.toggle('sel',x===b));
+});
+$('#bkBack').addEventListener('click',goBack);
+$('#bkNext').addEventListener('click',goNext);
+function submitBooking(){
+  const name=(bk.name||'').trim();
+  if(name.length<2){toast('Укажите имя (минимум 2 буквы)','err');return;}
+  if(!phoneOk(bk.phone)){toast('Укажите телефон в формате +7 XXX XXX-XX-XX','err');return;}
+  if(!bk.agree){toast('Подтвердите согласие на обработку данных','err');return;}
+  const c=selCalc();
+  if(!slotAvailable(bk.date,bk.time,c.dur)){
+    toast('Это время уже занято — выберите другое','err');
+    bk.step=2;bk.time='';renderStep();return;
+  }
+  const l=selList();
+  const emp=empOn(bk.date);
+  const b={code:genCode(),name,phone:bk.phone,car:(bk.car||'').trim(),plate:(bk.plate||'').trim().toUpperCase(),
+    services:l.map(s=>({id:s.id,name:s.name,price:s.price})),
+    date:bk.date,time:bk.time,comment:(bk.comment||'').trim(),
+    total:l.reduce((a,s)=>a+s.price,0),status:'new',createdAt:Date.now(),source:'online',
+    employeeId:emp?emp.id:null,empAuto:true};
+  if(SRV.mode){srvCreateBooking(b).then(ok=>{if(ok)showSuccess(b);});}
+  else{DB.bookings.push(b);save();showSuccess(b);}
+}
+function showSuccess(b){
+  bkDone=true;renderProg();
+  $('#bkPane').innerHTML=
+    '<div class="okwrap">'+
+      '<div class="okico">✓</div>'+
+      '<h3 style="margin-bottom:2px">Вы записаны!</h3>'+
+      '<div class="okcode">'+b.code+'</div>'+
+      '<p style="color:var(--mut);max-width:440px;margin:10px auto 18px">Администратор перезвонит на '+esc(b.phone)+' для подтверждения. Сохраните код записи — он пригодится в личном кабинете.</p>'+
+      '<div class="sumbox" style="text-align:left;margin-bottom:0">'+
+        '<div class="row"><span>Дата и время</span><b>'+fmtDateHuman(b.date)+', '+b.time+'</b></div>'+
+        '<div class="row"><span>Услуги</span><b>'+esc(b.services.map(s=>s.name).join(' + '))+'</b></div>'+
+        (empById(b.employeeId)?'<div class="row"><span>Ваш мастер</span><b>'+esc(empById(b.employeeId).name)+'</b></div>':'')+
+        '<div class="row"><span>Сумма</span><b>'+fmtMoney(b.total)+'</b></div>'+
+      '</div>'+
+      '<p class="hint" style="margin-top:14px">Уведомления: сохраните визит в календарь телефона или отправьте подтверждение себе в мессенджер.</p>'+
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:6px">'+
+        '<button class="btn btn-o btn-s" id="okIcs">📅 В календарь</button>'+
+        '<button class="btn btn-o btn-s" id="okWa">💬 WhatsApp</button>'+
+        '<button class="btn btn-o btn-s" id="okTg">✈️ Telegram</button>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px">'+
+        '<button class="btn btn-o" id="okAgain">Записать ещё</button>'+
+        '<button class="btn btn-p" id="okMy">Личный кабинет</button>'+
+      '</div>'+
+    '</div>';
+  $('#bkNav').style.display='none';
+  snapWizard();
+  $('#okAgain').addEventListener('click',()=>{resetBk();document.getElementById('booking').scrollIntoView();});
+  $('#okMy').addEventListener('click',()=>{location.href='cabinet.html?phone='+encodeURIComponent(b.phone);});
+  $('#okIcs').addEventListener('click',()=>downloadIcs(b));
+  $('#okWa').addEventListener('click',()=>window.open(waLink('',clientMsg(b)),'_blank','noopener'));
+  $('#okTg').addEventListener('click',()=>window.open(tgLink(clientMsg(b)),'_blank','noopener'));
+}
+function resetBk(){
+  bk.step=1;bk.services=new Set();bk.date='';bk.time='';bk.agree=false;
+  bkDone=false;$('#bkNav').style.display='';
+  renderStep();
+}
+function snapWizard(){
+  const card=document.querySelector('.bk-card');if(!card)return;
+  const r=card.getBoundingClientRect();
+  if(r.top<70||r.bottom>innerHeight)card.scrollIntoView({block:'start',behavior:'smooth'});
+}
+function chooseService(id){
+  bk.services.add(Number(id));
+  bkDone=false;bk.step=1;$('#bkNav').style.display='';
+  renderStep();
+  snapWizard();
+  toast('Услуга добавлена в запись');
+}
+/* делегирование: выбрать услугу из сетки */
+$('#svcGrid').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-choose]');if(!btn)return;
+  chooseService(btn.dataset.choose);
+});

@@ -1,0 +1,29 @@
+/* --- главная страница: запись, услуги, скрытый вход персонала по #<слог> --- */
+$('#burgerBtn').addEventListener('click',()=>$('#mnav').classList.toggle('open'));
+$$('#mnav a').forEach(a=>a.addEventListener('click',()=>$('#mnav').classList.remove('open')));
+$('#ftYear').textContent=new Date().getFullYear();
+/* #panel (или сменённый слог) ведёт на отдельную страницу входа персонала */
+function slugRedirect(){
+  const h=decodeURIComponent(location.hash.replace(/^#/,'')).toLowerCase();
+  if(h&&h===panelSlug().toLowerCase())location.replace('panel.html');
+}
+window.addEventListener('hashchange',slugRedirect);
+window.addEventListener('storage',e=>{
+  if(e.key&&e.key!==LS_KEY)return;
+  DB=loadDB();
+  renderServicesGrid();
+  if(!bkDone)renderStep();
+});
+(async()=>{
+  const render0=()=>{applySettings();renderServicesGrid();renderStep();};
+  render0();
+  if(await srvDetect()){
+    SRV.mode=true;
+    const j=await srvFetch('/api/state').then(r=>r.json()).catch(()=>null);
+    if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;}
+    else if(j&&j.empty){await srvFetch('/api/init',{method:'POST',body:JSON.stringify({db:DB})}).catch(()=>{});}
+    render0();
+    setInterval(srvSync,15000);
+  }
+  slugRedirect();
+})();

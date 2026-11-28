@@ -1,0 +1,24 @@
+/* --- скрытая страница входа персонала (panel.html) --- */
+function showSite(){location.href='index.html';}
+function enterAdmin(){location.replace('admin.html');}
+function enterStaff(){location.replace('staff.html');}
+$('#ftYear').textContent=new Date().getFullYear();
+(async()=>{
+  $('#pnlSend').disabled=true;$('#loginBtn').disabled=true;
+  applySettings();
+  SRV.mode=await srvDetect();
+  $('#pnlSend').disabled=false;$('#loginBtn').disabled=false;
+  /* уже вошёл в этой вкладке — сразу на свою страницу */
+  if(SS.st.getItem('sm_admin'))location.replace('admin.html');
+  else{
+    const sid=SS.st.getItem('sm_staff');
+    if(SRV.mode){
+      /* в режиме БД решает сервер: переносим только при живом доступе (токен или ПИН/пароль) */
+      if(SS.st.getItem('sm_token')||SS.st.getItem('sm_code'))location.replace('staff.html');
+    }else{
+      const e=sid&&empById(sid);
+      if(e&&e.active)location.replace('staff.html');
+      else SS.st.removeItem('sm_staff');
+    }
+  }
+})();
