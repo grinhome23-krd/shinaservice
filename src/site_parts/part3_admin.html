@@ -4,35 +4,16 @@
     <div class="login-card">
       <div class="logo">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        <span>Админ-панель</span>
+        <span>Вход — <span class="js-co">ШинаСервис</span></span>
       </div>
-      <p style="text-align:center;color:var(--mut);font-size:13.5px">Вход для администраторов <span class="js-co">ШинаСервис</span></p>
-      <label class="lb req">Пароль</label>
-      <input type="password" class="inp" id="loginPass" placeholder="Введите пароль">
-      <div class="err" id="loginErr">Неверный пароль. Попробуйте ещё раз.</div>
+      <p style="text-align:center;color:var(--mut);font-size:13.5px">Единая точка входа: сотрудник — по ПИН-коду, администратор — по паролю</p>
+      <label class="lb req">Код доступа</label>
+      <input class="inp" id="loginCode" autocomplete="off" placeholder="ПИН сотрудника (4–8 цифр) или пароль администратора">
+      <div class="err" id="loginErr">Код не подошёл: нет такого ПИН-кода сотрудника и пароль администратора не совпадает.</div>
       <button class="btn btn-p" id="loginBtn" style="width:100%;margin-top:14px">Войти</button>
       <button class="btn btn-o" id="loginBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
-      <p class="hint">Сотрудник? <a href="#" id="loginStaff">Войти по ПИН-коду</a></p>
-      <div class="hint">Демо-пароль по умолчанию: admin123 — смените его в «Настройках» после входа.</div>
-    </div>
-  </div>
-</div>
-
-<div id="staffLogin" hidden>
-  <div class="login-wrap">
-    <div class="login-card">
-      <div class="logo">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        <span>Панель сотрудника</span>
-      </div>
-      <p style="text-align:center;color:var(--mut);font-size:13.5px">Выберите себя и введите ПИН-код</p>
-      <div class="emp-chips" id="stEmpChips"></div>
-      <label class="lb req">ПИН-код</label>
-      <input type="password" class="inp" id="stPin" inputmode="numeric" maxlength="8" placeholder="••••" style="text-align:center;letter-spacing:8px;font-size:20px">
-      <div class="err" id="stErr">Неверный ПИН-код. Попробуйте ещё раз.</div>
-      <button class="btn btn-p" id="stLoginBtn" style="width:100%;margin-top:14px">Войти</button>
-      <button class="btn btn-o" id="stBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
-      <div class="hint">ПИН-коды выдаёт администратор: Настройки → «Сотрудники и смены».</div>
+      <div class="hint">Клиенту вход не нужен: запись — на главной, свои записи — в «Моих записях» по телефону.</div>
+      <div class="hint">ПИН-коды сотрудникам выдаёт администратор: Настройки → «Сотрудники и смены». Демо-пароль админа: admin123.</div>
     </div>
   </div>
 </div>

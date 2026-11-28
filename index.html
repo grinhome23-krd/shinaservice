@@ -426,7 +426,7 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
       <a href="#my">Личный кабинет</a>
       <a href="#faq">Вопросы</a>
     </nav>
-    <button class="btn btn-o btn-s" id="adminBtn">Админка</button>
+    <button class="btn btn-o btn-s" id="adminBtn">Вход</button>
     <button class="burger" id="burgerBtn" aria-label="Меню">☰</button>
   </div>
   <nav class="mnav" id="mnav">
@@ -565,8 +565,8 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
         <h4>Запись</h4>
         <p>Выберите услуги и время онлайн — это быстрее звонка.</p>
         <a class="btn btn-p btn-s" href="#booking">Записаться онлайн</a>
-        <p style="margin:16px 0 0"><a href="#" id="staffLink">Панель сотрудника (по ПИН-коду) →</a></p>
-        <p style="margin:8px 0 0"><a href="#" id="adminBtn2">Вход для администратора →</a></p>
+        <p style="margin:16px 0 0"><a href="#" id="staffLink">Вход сотрудника (по ПИН-коду) →</a></p>
+        <p style="margin:8px 0 0"><a href="#" id="adminBtn2">Единый вход: сотрудник или администратор →</a></p>
       </div>
     </div>
     <div class="ft-bot">
@@ -582,35 +582,16 @@ footer{border-top:1px solid var(--line);background:var(--bg2)}
     <div class="login-card">
       <div class="logo">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        <span>Админ-панель</span>
+        <span>Вход — <span class="js-co">ШинаСервис</span></span>
       </div>
-      <p style="text-align:center;color:var(--mut);font-size:13.5px">Вход для администраторов <span class="js-co">ШинаСервис</span></p>
-      <label class="lb req">Пароль</label>
-      <input type="password" class="inp" id="loginPass" placeholder="Введите пароль">
-      <div class="err" id="loginErr">Неверный пароль. Попробуйте ещё раз.</div>
+      <p style="text-align:center;color:var(--mut);font-size:13.5px">Единая точка входа: сотрудник — по ПИН-коду, администратор — по паролю</p>
+      <label class="lb req">Код доступа</label>
+      <input class="inp" id="loginCode" autocomplete="off" placeholder="ПИН сотрудника (4–8 цифр) или пароль администратора">
+      <div class="err" id="loginErr">Код не подошёл: нет такого ПИН-кода сотрудника и пароль администратора не совпадает.</div>
       <button class="btn btn-p" id="loginBtn" style="width:100%;margin-top:14px">Войти</button>
       <button class="btn btn-o" id="loginBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
-      <p class="hint">Сотрудник? <a href="#" id="loginStaff">Войти по ПИН-коду</a></p>
-      <div class="hint">Демо-пароль по умолчанию: admin123 — смените его в «Настройках» после входа.</div>
-    </div>
-  </div>
-</div>
-
-<div id="staffLogin" hidden>
-  <div class="login-wrap">
-    <div class="login-card">
-      <div class="logo">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        <span>Панель сотрудника</span>
-      </div>
-      <p style="text-align:center;color:var(--mut);font-size:13.5px">Выберите себя и введите ПИН-код</p>
-      <div class="emp-chips" id="stEmpChips"></div>
-      <label class="lb req">ПИН-код</label>
-      <input type="password" class="inp" id="stPin" inputmode="numeric" maxlength="8" placeholder="••••" style="text-align:center;letter-spacing:8px;font-size:20px">
-      <div class="err" id="stErr">Неверный ПИН-код. Попробуйте ещё раз.</div>
-      <button class="btn btn-p" id="stLoginBtn" style="width:100%;margin-top:14px">Войти</button>
-      <button class="btn btn-o" id="stBack" style="width:100%;margin-top:10px">← Вернуться на сайт</button>
-      <div class="hint">ПИН-коды выдаёт администратор: Настройки → «Сотрудники и смены».</div>
+      <div class="hint">Клиенту вход не нужен: запись — на главной, свои записи — в «Моих записях» по телефону.</div>
+      <div class="hint">ПИН-коды сотрудникам выдаёт администратор: Настройки → «Сотрудники и смены». Демо-пароль админа: admin123.</div>
     </div>
   </div>
 </div>
@@ -1020,7 +1001,76 @@ function loadDB(){
   return d;
 }
 DB=loadDB();
-const save=()=>{try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}};
+/* --- режим БД: если рядом запущен сервер (server/server.js) — общий источник данных
+     в SQLite, видимый всем клиентам/сотрудникам/админу; иначе — localStorage.
+     Сервер определяется автоматически при загрузке (GET /api/ping). --- */
+const SRV={mode:false,authed:null,updated:0,cab:[]};
+const srvFetch=(url,opts)=>fetch(url,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json'},(opts&&opts.headers)||{})}));
+function mergeState(jdb){
+  const base=defaultDB();
+  const d=Object.assign({},base,jdb);
+  d.settings=Object.assign({},base.settings,(jdb&&jdb.settings)||{});
+  DB=normalizeDB(d);
+  return DB;
+}
+function srvSaveFull(){
+  srvFetch('/api/db',{method:'POST',body:JSON.stringify({code:SRV.authed,db:DB})})
+    .then(r=>r.json())
+    .then(j=>{if(j&&j.ok){if(j.updated)SRV.updated=j.updated;}else toast('Сервер не принял изменения (проверьте код доступа)','err');})
+    .catch(()=>toast('Сервер БД недоступен — изменения сохранены только локально','err'));
+}
+/* публичное изменение своей записи (личный кабинет): точечный patch без личных данных других клиентов */
+function srvPushBookingPatch(b){
+  const patch={status:b.status,notices:b.notices||[],date:b.date,time:b.time,services:b.services||[],total:b.total||0,
+    car:b.car||'',plate:b.plate||'',comment:b.comment||'',employeeId:b.employeeId||null,empAuto:b.empAuto!==false,source:b.source||'online'};
+  srvFetch('/api/booking-op',{method:'POST',body:JSON.stringify({code:b.code,patch:patch})})
+    .then(r=>r.json())
+    .then(j=>{if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;}else toast('Сервер не принял изменение записи','err');})
+    .catch(()=>toast('Сервер БД недоступен — изменение не сохранено','err'));
+}
+function srvCreateBooking(b){
+  return srvFetch('/api/bookings',{method:'POST',body:JSON.stringify({booking:b})})
+    .then(r=>r.json())
+    .then(j=>{
+      if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;return true;}
+      toast(j&&j.err==='slot'?'Это время уже занято (по данным БД) — выберите другое':'Сервер БД не принял запись','err');
+      return false;
+    })
+    .catch(()=>{toast('Сервер БД недоступен — запись не сохранена','err');return false;});
+}
+function srvMy(phone){
+  return srvFetch('/api/my?phone='+encodeURIComponent(phone)).then(r=>r.json()).then(j=>{
+    SRV.cab=(j&&j.ok&&Array.isArray(j.bookings))?j.bookings:[];
+    return SRV.cab;
+  }).catch(()=>{SRV.cab=[];return SRV.cab;});
+}
+async function srvSync(){
+  if(!SRV.mode||document.hidden)return;
+  try{
+    const url=SRV.authed?('/api/db?code='+encodeURIComponent(SRV.authed)):'/api/state';
+    const j=await srvFetch(url).then(r=>r.json());
+    if(j&&j.ok&&j.db&&j.updated!==SRV.updated){
+      mergeState(j.db);SRV.updated=j.updated;
+      notifWatch();
+      if(!document.querySelector('.modal-box')){
+        if(isStaff())renderStaff();
+        else if(isAdmin())renderAdmin();
+        else{renderServicesGrid();if(!bkDone)renderStep();}
+      }
+    }
+  }catch(e){}
+}
+async function srvDetect(){
+  try{
+    const r=await fetch('/api/ping',{signal:AbortSignal.timeout(2500)});
+    const j=await r.json();
+    return !!(j&&j.ok);
+  }catch(e){return false;}
+}
+const save=()=>{
+  try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}
+  if(SRV.mode&&SRV.authed)srvSaveFull();
+};
 const svcById=id=>DB.services.find(s=>s.id===Number(id));
 const activeServices=()=>DB.services.filter(s=>s.active);
 const empById=id=>DB.settings.employees.find(e=>e.id===Number(id));
@@ -1454,8 +1504,8 @@ function submitBooking(){
     date:bk.date,time:bk.time,comment:(bk.comment||'').trim(),
     total:l.reduce((a,s)=>a+s.price,0),status:'new',createdAt:Date.now(),source:'online',
     employeeId:emp?emp.id:null,empAuto:true};
-  DB.bookings.push(b);save();
-  showSuccess(b);
+  if(SRV.mode){srvCreateBooking(b).then(ok=>{if(ok)showSuccess(b);});}
+  else{DB.bookings.push(b);save();showSuccess(b);}
 }
 function showSuccess(b){
   bkDone=true;renderProg();
@@ -1513,9 +1563,11 @@ function findMy(){
   const dig=normDigits($('#myPhone').value||'');
   if(dig.length!==11){wrap.innerHTML='<div class="msg warn" style="max-width:720px">Введите телефон в формате +7 XXX XXX-XX-XX — как при записи.</div>';return;}
   CAB.phone=dig;
+  if(SRV.mode&&!SRV.authed){wrap.innerHTML='<div class="sub" style="max-width:720px">Ищем записи в базе…</div>';srvMy(dig).then(()=>renderCabinet());return;}
   renderCabinet();
 }
 function cabItems(){
+  if(SRV.mode&&!SRV.authed)return SRV.cab.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
   return DB.bookings.filter(b=>normDigits(b.phone)===CAB.phone)
     .sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
 }
@@ -1570,7 +1622,8 @@ function renderCabinet(){
     '<button class="btn btn-o btn-s" data-cabout style="margin-top:6px">Выйти из кабинета</button>';
 }
 function openMyDetails(code){
-  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  const src=(SRV.mode&&!SRV.authed)?SRV.cab:DB.bookings;
+  const b=src.find(x=>x.code===code);if(!b)return;
   const future=isFutureBooking(b);
   const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
   const canEdit=b.status==='new'&&future;
@@ -1602,6 +1655,7 @@ function openMyDetails(code){
   if(cn)cn.onclick=()=>openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
     b.status='cancelled';
     cabNotice(b,'Запись отменена клиентом через личный кабинет');
+    if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
     save();closeModal();renderCabinet();
     toast('Запись '+b.code+' отменена');
   });
@@ -1665,6 +1719,7 @@ function openMyEdit(b){
     b.total=list.reduce((a,s)=>a+s.price,0);
     if(b.empAuto){const e=empOn(date);if(e)b.employeeId=e.id;}
     if(changes.length)cabNotice(b,'Изменено клиентом через личный кабинет ('+changes.join('; ')+')');
+    if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
     save();closeModal();renderCabinet();
     toast('Запись '+b.code+' обновлена — администратор увидит изменения');
   };
@@ -1679,6 +1734,7 @@ $('#myList').addEventListener('click',e=>{
     openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
       b.status='cancelled';
       cabNotice(b,'Запись отменена клиентом через личный кабинет');
+      if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
       save();renderCabinet();toast('Запись '+b.code+' отменена');
     });
     return;
@@ -1997,13 +2053,14 @@ function openBookingEdit(code,opts){
 function openManualBooking(opts){
   opts=opts||{};
   const isStaffView=!!opts.staff;
+  const preEmp=opts.date?empOn(opts.date):null;
   const list=activeServices();
   if(!list.length){toast('Сначала добавьте услуги','err');return;}
   openModal(
     '<div class="m-head"><h3>'+(isStaffView?'Новая запись по звонку':'Новая запись (вручную)')+'</h3><button class="m-x" data-mx>×</button></div>'+
     '<div class="m-body">'+
       '<div class="f-grid">'+
-        '<div><label class="lb req">Дата</label><input type="date" id="mbDate" class="inp" min="'+todayISO()+'"></div>'+
+        '<div><label class="lb req">Дата</label><input type="date" id="mbDate" class="inp" min="'+todayISO()+'" value="'+(opts.date||'')+'"></div>'+
         '<div><label class="lb req">Время</label><select id="mbTime" class="inp"><option value="">— выберите дату —</option></select></div>'+
         '<div><label class="lb req">Имя</label><input id="mbName" class="inp"></div>'+
         '<div><label class="lb req">Телефон</label><input id="mbPhone" class="inp" inputmode="tel" placeholder="+7 (___) ___-__-__"></div>'+
@@ -2012,7 +2069,10 @@ function openManualBooking(opts){
         '<div class="full"><label class="lb">Комментарий</label><input id="mbCom" class="inp"></div>'+
         '<div class="full"><label class="lb">Мастер (в чью смену записать)</label><select id="mbEmp" class="inp">'+
           '<option value="auto">Авто — мастер по графику смен</option>'+
-          DB.settings.employees.filter(e=>e.active).map(e=>'<option value="'+e.id+'">'+esc(e.name)+'</option>').join('')+
+          DB.settings.employees.filter(e=>e.active).map(e=>{
+            const pre=preEmp&&preEmp.id===e.id;
+            return '<option value="'+e.id+'"'+(pre?' selected':'')+'>'+esc(e.name)+(pre?' — на смене в этот день':'')+'</option>';
+          }).join('')+
         '</select></div>'+
       '</div>'+
       '<p class="mut-sm" style="margin-top:8px">Запись по звонку можно создать в любую смену, включая коллегу, — выберите мастера в списке. Запись появится в его панели с уведомлением.</p>'+
@@ -2039,6 +2099,7 @@ function openManualBooking(opts){
   }));
   $('#mbDate').addEventListener('change',loadMbSlots);
   $('#mbPhone').addEventListener('input',e=>phoneMask(e.target));
+  if(opts.date)loadMbSlots();
   $('#mbSave').onclick=()=>{
     const name=$('#mbName').value.trim();
     const date=$('#mbDate').value;const time=$('#mbTime').value;
@@ -2505,27 +2566,19 @@ $('#btnReset').addEventListener('click',()=>{
 });
 
 /* ================= ВХОД И ИНИЦИАЛИЗАЦИЯ ================= */
-function hideViews(){['#site','#loginView','#admin','#staffLogin','#staff'].forEach(s=>{$(s).hidden=true;});}
+function hideViews(){['#site','#loginView','#admin','#staff'].forEach(s=>{$(s).hidden=true;});}
 function enterAdmin(msg){hideViews();$('#admin').hidden=false;window.scrollTo(0,0);renderAdmin();if(msg)toast('Добро пожаловать!');}
 function showSite(){hideViews();$('#site').hidden=false;}
-function showLogin(){hideViews();$('#loginView').hidden=false;setTimeout(()=>$('#loginPass').focus(),60);}
-function logout(){SS.st.removeItem('sm_admin');showSite();toast('Вы вышли из админки');}
+function showLogin(){hideViews();$('#loginView').hidden=false;setTimeout(()=>$('#loginCode').focus(),60);}
+function logout(){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_code');showSite();toast('Вы вышли из админки');}
 
 /* ================= ПАНЕЛЬ СОТРУДНИКА ================= */
 const S={empId:null,filter:'today',view:'list',calMonth:null,calDay:null};
 const isStaff=()=>{const id=SS.st.getItem('sm_staff');const e=id&&empById(id);return !!(e&&e.active);};
-function showStaffLogin(){
-  hideViews();$('#staffLogin').hidden=false;
-  const emps=activeEmps();
-  $('#stEmpChips').innerHTML=emps.length?emps.map((e,i)=>
-    '<button class="emp-chip'+(i===0?' on':'')+'" data-stemp="'+e.id+'" style="--ec:'+e.color+'">'+esc(e.name)+'<small>ПИН: '+e.pin.length+' цифр</small></button>').join('')
-    :'<div class="msg warn">Сотрудники не настроены. Обратитесь к администратору.</div>';
-  $('#stPin').value='';$('#stErr').style.display='none';
-}
 function enterStaff(msg){
   S.empId=Number(SS.st.getItem('sm_staff'));
   const e=empById(S.empId);
-  if(!e||!e.active){SS.st.removeItem('sm_staff');showStaffLogin();return;}
+  if(!e||!e.active){SS.st.removeItem('sm_staff');SS.st.removeItem('sm_code');showLogin();return;}
   hideViews();$('#staff').hidden=false;window.scrollTo(0,0);
   renderStaff();
   const fresh=unseenForStaff(e).length;
@@ -2543,7 +2596,7 @@ function markStaffSeen(){
   DB.settings.staffSeen[e.id]=Date.now();save();
 }
 function renderStaff(){
-  const e=staffEmp();if(!e){showStaffLogin();return;}
+  const e=staffEmp();if(!e){showLogin();return;}
   const t=todayISO();
   const eToday=empOn(t);
   const onShift=eToday&&eToday.id===e.id;
@@ -2635,18 +2688,25 @@ function renderStaffCal(e){
 }
 function calDayTimeline(e,iso){
   const s=DB.settings;
-  const items=DB.bookings.filter(b=>b.employeeId===e.id&&b.date===iso&&b.status!=='cancelled').sort((a,b)=>a.time.localeCompare(b.time));
+  const items=DB.bookings.filter(b=>b.date===iso&&b.status!=='cancelled').sort((a,b)=>a.time.localeCompare(b.time));
+  const dayEmp=empOn(iso);
+  const who=dayEmp?(dayEmp.id===e.id?'ваша смена':'смена: '+dayEmp.name):'нет активных мастеров';
   const rows=items.map(b=>{
     const endM=Math.min(toMin(s.workEnd),toMin(b.time)+b.services.reduce((a,x)=>{const sv=svcById(x.id);return a+(sv?sv.dur:30);},0));
     return '<div class="tl-row'+(b.status==='done'?' done':'')+'"><b class="tl-t">'+b.time+'–'+pad2(Math.floor(endM/60))+':'+pad2(endM%60)+'</b>'+
       '<div style="flex:1;min-width:0"><div>'+esc(b.name)+(b.car?' <span class="sub">· '+esc(b.car)+'</span>':'')+'</div>'+
-      '<div class="sub">'+esc(b.services.map(x=>x.name).join(' + '))+' · '+fmtMoney(b.total)+'</div></div>'+
+      '<div class="sub">'+esc(b.services.map(x=>x.name).join(' + '))+' · '+fmtMoney(b.total)+'</div>'+
+      (b.employeeId?empBadge(b.employeeId):'')+'</div>'+
       stBadge(b.status)+'</div>';
   }).join('');
-  return '<div style="margin-top:14px"><h3>Загруженность: '+fmtDateHuman(iso)+'</h3>'+
+  return '<div style="margin-top:14px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'+
+      '<h3 style="margin:0">Загруженность: '+fmtDateHuman(iso)+' <span class="sub">· '+who+'</span></h3>'+
+      '<button class="btn btn-p btn-s" data-calbook="1" style="margin-left:auto">+ Записать на этот день</button></div>'+
+    '<p class="mut-sm" style="margin-bottom:8px">Записать клиента можно в любую смену, в том числе коллеге, — мастер выбирается в форме.</p>'+
     (rows||'<div class="empty">Записей нет — день свободен</div>')+'</div>';
 }
 $('#stCal').addEventListener('click',e=>{
+  if(e.target.closest('[data-calbook]')){openManualBooking({staff:true,date:S.calDay});return;}
   const nav=e.target.closest('[data-calnav]');
   if(nav){
     const [y,m]=S.calMonth.split('-').map(Number);
@@ -2786,51 +2846,74 @@ $('#stList').addEventListener('click',e=>{
   if(cn){openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> ('+esc(b.name)+') на '+fmtDateHuman(b.date)+', '+b.time+' будет отменена, клиент получит уведомление.','Отменить',()=>{
     b.status='cancelled';notifyClient(b,'cancelled');save();renderStaff();toast('Запись отменена · клиент уведомлён');});}
 });
-$('#stEmpChips').addEventListener('click',e=>{
-  const c=e.target.closest('[data-stemp]');if(!c)return;
-  $$('#stEmpChips .emp-chip').forEach(x=>x.classList.toggle('on',x===c));
-});
-function staffLogin(){
-  const chips=$$('#stEmpChips .emp-chip');
-  const sel=chips.find(x=>x.classList.contains('on'));
-  if(!sel){toast('Выберите сотрудника','err');return;}
-  const emp=empById(sel.dataset.stemp);
-  if(!emp||!emp.active){toast('Сотрудник неактивен','err');return;}
-  if($('#stPin').value!==emp.pin){$('#stErr').style.display='block';return;}
-  $('#stPin').value='';$('#stErr').style.display='none';
-  SS.st.setItem('sm_staff',String(emp.id));
-  ensureNotifPerm();
-  enterStaff(true);
+/* --- единая точка входа: ПИН сотрудника или пароль администратора --- */
+async function tryLogin(codeRaw){
+  const code=(codeRaw||'').trim();
+  const errEl=$('#loginErr');
+  if(!code){errEl.style.display='block';return;}
+  if(SRV.mode){
+    let j=null;
+    try{j=await srvFetch('/api/db?code='+encodeURIComponent(code)).then(r=>r.json());}catch(e){}
+    if(j&&j.ok&&j.db){
+      mergeState(j.db);SRV.authed=code;SRV.updated=j.updated;
+      SS.st.setItem('sm_code',code);
+      $('#loginCode').value='';errEl.style.display='none';
+      ensureNotifPerm();
+      if(j.role==='admin'){SS.st.setItem('sm_admin','1');enterAdmin(true);}
+      else{SS.st.setItem('sm_staff',String(j.role));enterStaff(true);}
+      return;
+    }
+    if(j&&j.err==='badcode'){errEl.style.display='block';return;}
+    toast('Сервер БД недоступен','err');return;
+  }
+  const emp=DB.settings.employees.find(e=>e.active&&e.pin===code);
+  if(emp){$('#loginCode').value='';errEl.style.display='none';SS.st.setItem('sm_staff',String(emp.id));ensureNotifPerm();enterStaff(true);return;}
+  if(code===DB.settings.adminPass){$('#loginCode').value='';errEl.style.display='none';SS.st.setItem('sm_admin','1');ensureNotifPerm();enterAdmin(true);return;}
+  errEl.style.display='block';
 }
-$('#stLoginBtn').addEventListener('click',staffLogin);
-$('#stPin').addEventListener('keydown',e=>{if(e.key==='Enter')staffLogin();});
-$('#stBack').addEventListener('click',showSite);
-$('#stSite').addEventListener('click',showSite);
-$('#stLogout').addEventListener('click',()=>{SS.st.removeItem('sm_staff');showSite();toast('Вы вышли из панели');});
-
-/* --- входы --- */
 $('#adminBtn').addEventListener('click',()=>{isAdmin()?enterAdmin(true):showLogin();});
 $('#adminBtn2').addEventListener('click',e=>{e.preventDefault();isAdmin()?enterAdmin(true):showLogin();});
 $('#loginBack').addEventListener('click',showSite);
-$('#loginStaff').addEventListener('click',e=>{e.preventDefault();showStaffLogin();});
-$('#staffLink').addEventListener('click',e=>{e.preventDefault();showStaffLogin();});
-$('#mStaffLink').addEventListener('click',e=>{e.preventDefault();$('#mnav').classList.remove('open');showStaffLogin();});
-$('#loginBtn').addEventListener('click',()=>{
-  if($('#loginPass').value===DB.settings.adminPass){$('#loginPass').value='';$('#loginErr').style.display='none';SS.st.setItem('sm_admin','1');ensureNotifPerm();enterAdmin(true);}
-  else $('#loginErr').style.display='block';
-});
-$('#loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')$('#loginBtn').click();});
+$('#staffLink').addEventListener('click',e=>{e.preventDefault();showLogin();});
+$('#mStaffLink').addEventListener('click',e=>{e.preventDefault();$('#mnav').classList.remove('open');showLogin();});
+$('#loginBtn').addEventListener('click',()=>tryLogin($('#loginCode').value));
+$('#loginCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryLogin($('#loginCode').value);}});
+$('#stSite').addEventListener('click',showSite);
+$('#stLogout').addEventListener('click',()=>{SS.st.removeItem('sm_staff');SS.st.removeItem('sm_code');showSite();toast('Вы вышли из панели');});
+
+/* --- входы --- */
 $('#aSite').addEventListener('click',showSite);
 $('#aLogout').addEventListener('click',logout);
 $('#burgerBtn').addEventListener('click',()=>$('#mnav').classList.toggle('open'));
 $$('#mnav a').forEach(a=>a.addEventListener('click',()=>$('#mnav').classList.remove('open')));
 $('#ftYear').textContent=new Date().getFullYear();
 
-applySettings();
-renderServicesGrid();
-renderStep();
-if(isAdmin())enterAdmin(false);
-if(isStaff())enterStaff(false);
+/* --- старт: режим БД сервера определяется автоматически; без сервера — localStorage --- */
+(async()=>{
+  const render0=()=>{applySettings();renderServicesGrid();renderStep();};
+  render0();
+  if(await srvDetect()){
+    SRV.mode=true;
+    const j=await srvFetch('/api/state').then(r=>r.json()).catch(()=>null);
+    if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;}
+    else if(j&&j.empty){await srvFetch('/api/init',{method:'POST',body:JSON.stringify({db:DB})}).catch(()=>{});}
+    /* в режиме БД действительны только сессии с кодом доступа */
+    const sc=SS.st.getItem('sm_code');
+    if(sc){
+      const r2=await srvFetch('/api/db?code='+encodeURIComponent(sc)).then(r=>r.json()).catch(()=>null);
+      if(r2&&r2.ok&&r2.db){mergeState(r2.db);SRV.authed=sc;SRV.updated=r2.updated;}
+      else SS.st.removeItem('sm_code');
+    }
+    if(!SRV.authed){SS.st.removeItem('sm_admin');SS.st.removeItem('sm_staff');}
+    render0();
+    if(isAdmin())enterAdmin(false);
+    if(isStaff())enterStaff(false);
+    setInterval(srvSync,15000);
+  } else {
+    if(isAdmin())enterAdmin(false);
+    if(isStaff())enterStaff(false);
+  }
+})();
 /* Межвкладочные обновления: если клиент записался в другой вкладке этого браузера
    (localStorage общий), админка и панель сотрудника перечитывают данные, а
    notifWatch() показывает пуш-уведомление со звуком о новой записи. */

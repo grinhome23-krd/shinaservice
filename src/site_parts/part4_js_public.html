@@ -155,7 +155,76 @@ function loadDB(){
   return d;
 }
 DB=loadDB();
-const save=()=>{try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}};
+/* --- режим БД: если рядом запущен сервер (server/server.js) — общий источник данных
+     в SQLite, видимый всем клиентам/сотрудникам/админу; иначе — localStorage.
+     Сервер определяется автоматически при загрузке (GET /api/ping). --- */
+const SRV={mode:false,authed:null,updated:0,cab:[]};
+const srvFetch=(url,opts)=>fetch(url,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json'},(opts&&opts.headers)||{})}));
+function mergeState(jdb){
+  const base=defaultDB();
+  const d=Object.assign({},base,jdb);
+  d.settings=Object.assign({},base.settings,(jdb&&jdb.settings)||{});
+  DB=normalizeDB(d);
+  return DB;
+}
+function srvSaveFull(){
+  srvFetch('/api/db',{method:'POST',body:JSON.stringify({code:SRV.authed,db:DB})})
+    .then(r=>r.json())
+    .then(j=>{if(j&&j.ok){if(j.updated)SRV.updated=j.updated;}else toast('Сервер не принял изменения (проверьте код доступа)','err');})
+    .catch(()=>toast('Сервер БД недоступен — изменения сохранены только локально','err'));
+}
+/* публичное изменение своей записи (личный кабинет): точечный patch без личных данных других клиентов */
+function srvPushBookingPatch(b){
+  const patch={status:b.status,notices:b.notices||[],date:b.date,time:b.time,services:b.services||[],total:b.total||0,
+    car:b.car||'',plate:b.plate||'',comment:b.comment||'',employeeId:b.employeeId||null,empAuto:b.empAuto!==false,source:b.source||'online'};
+  srvFetch('/api/booking-op',{method:'POST',body:JSON.stringify({code:b.code,patch:patch})})
+    .then(r=>r.json())
+    .then(j=>{if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;}else toast('Сервер не принял изменение записи','err');})
+    .catch(()=>toast('Сервер БД недоступен — изменение не сохранено','err'));
+}
+function srvCreateBooking(b){
+  return srvFetch('/api/bookings',{method:'POST',body:JSON.stringify({booking:b})})
+    .then(r=>r.json())
+    .then(j=>{
+      if(j&&j.ok&&j.db){mergeState(j.db);SRV.updated=j.updated;return true;}
+      toast(j&&j.err==='slot'?'Это время уже занято (по данным БД) — выберите другое':'Сервер БД не принял запись','err');
+      return false;
+    })
+    .catch(()=>{toast('Сервер БД недоступен — запись не сохранена','err');return false;});
+}
+function srvMy(phone){
+  return srvFetch('/api/my?phone='+encodeURIComponent(phone)).then(r=>r.json()).then(j=>{
+    SRV.cab=(j&&j.ok&&Array.isArray(j.bookings))?j.bookings:[];
+    return SRV.cab;
+  }).catch(()=>{SRV.cab=[];return SRV.cab;});
+}
+async function srvSync(){
+  if(!SRV.mode||document.hidden)return;
+  try{
+    const url=SRV.authed?('/api/db?code='+encodeURIComponent(SRV.authed)):'/api/state';
+    const j=await srvFetch(url).then(r=>r.json());
+    if(j&&j.ok&&j.db&&j.updated!==SRV.updated){
+      mergeState(j.db);SRV.updated=j.updated;
+      notifWatch();
+      if(!document.querySelector('.modal-box')){
+        if(isStaff())renderStaff();
+        else if(isAdmin())renderAdmin();
+        else{renderServicesGrid();if(!bkDone)renderStep();}
+      }
+    }
+  }catch(e){}
+}
+async function srvDetect(){
+  try{
+    const r=await fetch('/api/ping',{signal:AbortSignal.timeout(2500)});
+    const j=await r.json();
+    return !!(j&&j.ok);
+  }catch(e){return false;}
+}
+const save=()=>{
+  try{LS.st.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}
+  if(SRV.mode&&SRV.authed)srvSaveFull();
+};
 const svcById=id=>DB.services.find(s=>s.id===Number(id));
 const activeServices=()=>DB.services.filter(s=>s.active);
 const empById=id=>DB.settings.employees.find(e=>e.id===Number(id));
@@ -589,8 +658,8 @@ function submitBooking(){
     date:bk.date,time:bk.time,comment:(bk.comment||'').trim(),
     total:l.reduce((a,s)=>a+s.price,0),status:'new',createdAt:Date.now(),source:'online',
     employeeId:emp?emp.id:null,empAuto:true};
-  DB.bookings.push(b);save();
-  showSuccess(b);
+  if(SRV.mode){srvCreateBooking(b).then(ok=>{if(ok)showSuccess(b);});}
+  else{DB.bookings.push(b);save();showSuccess(b);}
 }
 function showSuccess(b){
   bkDone=true;renderProg();
@@ -648,9 +717,11 @@ function findMy(){
   const dig=normDigits($('#myPhone').value||'');
   if(dig.length!==11){wrap.innerHTML='<div class="msg warn" style="max-width:720px">Введите телефон в формате +7 XXX XXX-XX-XX — как при записи.</div>';return;}
   CAB.phone=dig;
+  if(SRV.mode&&!SRV.authed){wrap.innerHTML='<div class="sub" style="max-width:720px">Ищем записи в базе…</div>';srvMy(dig).then(()=>renderCabinet());return;}
   renderCabinet();
 }
 function cabItems(){
+  if(SRV.mode&&!SRV.authed)return SRV.cab.slice().sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
   return DB.bookings.filter(b=>normDigits(b.phone)===CAB.phone)
     .sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
 }
@@ -705,7 +776,8 @@ function renderCabinet(){
     '<button class="btn btn-o btn-s" data-cabout style="margin-top:6px">Выйти из кабинета</button>';
 }
 function openMyDetails(code){
-  const b=DB.bookings.find(x=>x.code===code);if(!b)return;
+  const src=(SRV.mode&&!SRV.authed)?SRV.cab:DB.bookings;
+  const b=src.find(x=>x.code===code);if(!b)return;
   const future=isFutureBooking(b);
   const canCancel=(b.status==='new'||b.status==='confirmed')&&future;
   const canEdit=b.status==='new'&&future;
@@ -737,6 +809,7 @@ function openMyDetails(code){
   if(cn)cn.onclick=()=>openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
     b.status='cancelled';
     cabNotice(b,'Запись отменена клиентом через личный кабинет');
+    if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
     save();closeModal();renderCabinet();
     toast('Запись '+b.code+' отменена');
   });
@@ -800,6 +873,7 @@ function openMyEdit(b){
     b.total=list.reduce((a,s)=>a+s.price,0);
     if(b.empAuto){const e=empOn(date);if(e)b.employeeId=e.id;}
     if(changes.length)cabNotice(b,'Изменено клиентом через личный кабинет ('+changes.join('; ')+')');
+    if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
     save();closeModal();renderCabinet();
     toast('Запись '+b.code+' обновлена — администратор увидит изменения');
   };
@@ -814,6 +888,7 @@ $('#myList').addEventListener('click',e=>{
     openConfirm('Отменить запись?','Запись <b>'+b.code+'</b> на '+esc(fmtDateHuman(b.date))+', '+b.time+' будет отменена.','Да, отменить',()=>{
       b.status='cancelled';
       cabNotice(b,'Запись отменена клиентом через личный кабинет');
+      if(SRV.mode&&!SRV.authed)srvPushBookingPatch(b);
       save();renderCabinet();toast('Запись '+b.code+' отменена');
     });
     return;
